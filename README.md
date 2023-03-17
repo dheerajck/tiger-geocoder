@@ -5,24 +5,18 @@
 ## First install postgresql, psql and postgis on your system
 
 
-## Create a new database and user with the following SQL commands
+## Create a new database and a super user with the following SQL commands
     CREATE DATABASE project_name;
-    CREATE USER new_user WITH PASSWORD 'password';
-    GRANT ALL PRIVILEGES ON DATABASE project_name TO new_user;
-    ALTER DATABASE project_name OWNER TO new_user;
+    CREATE USER super_user WITH SUPERUSER PASSWORD 'password';
 
 
-## Now select newly created database and a super user as your active database and user
-**To create a super user if needed use this sql command
-```
-CREATE USER super_user WITH SUPERUSER PASSWORD 'password';
-```
+## Now select newly created database and super user as your active database and user
 
 ```
 \c project_name super_user
 ```
 
-**Make sure to select a super user as user except in env file**
+**Make sure to select a super user as user always except in env file, super user privilege is required to setup postgis and tiger geocoder**
 
 
 ## Now install the required extensions for TIGER
@@ -38,8 +32,8 @@ CREATE USER super_user WITH SUPERUSER PASSWORD 'password';
 ## Create folders for TIGER data
 **Create two folders for the TIGER data with the following commands:**
 ```
-mkdir ~/gisdata
-mkdir ~/gisdata/temp
+mkdir /home/user/gisdata/
+mkdir /home/user/gisdata/temp
 ```
 
 
@@ -53,7 +47,7 @@ psql -U $YOUR_SUPER_USER -c "SELECT Loader_Generate_Nation_Script('sh')" -d $YOU
  **Read the comments here to get an idea**
 ```
 # Temp directory created above
-TMPDIR=~/gisdata/temp/
+TMPDIR=/home/user/gisdata/temp
 # A tool for unzipping, usually unzip on most UNIX systems.
 UNZIPTOOL=unzip
 # Below is not needed for sh.
@@ -83,7 +77,7 @@ psql -U $YOUR_SUPER_USER -c "SELECT Loader_Generate_Script(ARRAY['MA'], 'sh')" -
 **Now run the state script ~/gisdata/ma_load_script.sh**
 
 
-## Clean up the TIGER tables with the following SQL commands
+## Now create requied indexes and then clean up the TIGER tables with the following SQL commands
 ```
 SELECT install_missing_indexes();
 vacuum (analyze, verbose) tiger.addr;
