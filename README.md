@@ -39,11 +39,11 @@ mkdir /home/user/gisdata/temp
 
 ## Export the loader script from the command line with the following command
 ```
-psql -U $YOUR_SUPER_USER -c "SELECT Loader_Generate_Nation_Script('sh')" -d $YOUR_DATABASE -tA > ~/gisdata/nation_script_load.sh
+psql -U $YOUR_SUPER_USER -c "SELECT Loader_Generate_Nation_Script('sh')" -d $YOUR_DATABASE -tA > /home/user/gisdata/nation_script_load.sh
 ```
 
 
-## Now open the file ~/gisdata/nation_script_load.sh and edit it to use information related to your machine
+## Now open the file /home/user/gisdata/nation_script_load.sh and edit it to use information related to your machine
  **Read the comments here to get an idea**
 ```
 # Temp directory created above
@@ -62,19 +62,19 @@ PSQL= Output of `which psql` command
 # The below is entirely unnecessary other than for the fact that the rest of the script inexplicably uses a variable to refer to this app.
 SHP2PGSQL=shp2pgsql
 ```
-**Now run the loader script ~/gisdata/nation_load_script.sh**
+**Now run the loader script /home/user/gisdata/nation_load_script.sh**
 
 
 ## Load the state script
 **Use https://www.bu.edu/brand/guidelines/editorial-style/us-state-abbreviations/ to find short names of states in US you need, and add them to the array.**
 ```
-psql -U $YOUR_SUPER_USER -c "SELECT Loader_Generate_Script(ARRAY['MA'], 'sh')" -d $YOUR_DATABASE -tA > ~/gisdata/ma_load_script.sh
+psql -U $YOUR_SUPER_USER -c "SELECT Loader_Generate_Script(ARRAY['MA'], 'sh')" -d $YOUR_DATABASE -tA > /home/user/gisdata/ma_load_script.sh
 ```
 
 
-## Edit the state script ~/gisdata/ma_load_script.sh with the variables you used above
+## Edit the state script /home/user/gisdata/ma_load_script.sh with the variables you used above
 
-**Now run the state script ~/gisdata/ma_load_script.sh**
+**Now run the state script /home/user/gisdata/ma_load_script.sh**
 
 
 ## Now create requied indexes and then clean up the TIGER tables with the following SQL commands
