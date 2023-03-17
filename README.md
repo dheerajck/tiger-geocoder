@@ -33,7 +33,7 @@
 **Create two folders for the TIGER data with the following commands:**
 ```
 mkdir /home/user/gisdata/
-mkdir /home/user/gisdata/temp
+mkdir /home/user/gisdata/temp/
 ```
 
 
@@ -77,7 +77,7 @@ psql -U $YOUR_SUPER_USER -c "SELECT Loader_Generate_Script(ARRAY['MA'], 'sh')" -
 **Now run the state script /home/user/gisdata/ma_load_script.sh**
 
 
-## Now create requied indexes and then clean up the TIGER tables with the following SQL commands
+## Now create required indexes and then clean up the TIGER tables with the following SQL commands
 ```
 SELECT install_missing_indexes();
 vacuum (analyze, verbose) tiger.addr;
