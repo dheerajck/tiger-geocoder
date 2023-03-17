@@ -8,14 +8,21 @@
 ## Create a new database and user with the following SQL commands
     CREATE DATABASE project_name;
     CREATE USER new_user WITH PASSWORD 'password';
-    GRANT ALL PRIVILEGES ON DATABASE myproject TO new_user;
-    ALTER DATABASE myproject OWNER TO new_user;
+    GRANT ALL PRIVILEGES ON DATABASE project_name TO new_user;
+    ALTER DATABASE project_name OWNER TO new_user;
 
 
-## Now select newly created database and user as active user and database 
+## Now select newly created database and a super user as your active database and user
+**To create a super user if needed use this sql command
 ```
-\c project_name new_user
+CREATE USER super_user WITH SUPERUSER PASSWORD 'password';
 ```
+
+```
+\c project_name super_user
+```
+
+**Make sure to select a super user as user except in env file**
 
 
 ## Now install the required extensions for TIGER
@@ -38,7 +45,7 @@ mkdir ~/gisdata/temp
 
 ## Export the loader script from the command line with the following command
 ```
-psql -U $YOUR_USER -c "SELECT Loader_Generate_Nation_Script('sh')" -d $YOUR_DATABASE -tA > ~/gisdata/nation_script_load.sh
+psql -U $YOUR_SUPER_USER -c "SELECT Loader_Generate_Nation_Script('sh')" -d $YOUR_DATABASE -tA > ~/gisdata/nation_script_load.sh
 ```
 
 
@@ -67,7 +74,7 @@ SHP2PGSQL=shp2pgsql
 ## Load the state script
 **Use https://www.bu.edu/brand/guidelines/editorial-style/us-state-abbreviations/ to find short names of states in US you need, and add them to the array.**
 ```
-psql -U $YOUR_USER -c "SELECT Loader_Generate_Script(ARRAY['MA'], 'sh')" -d $YOUR_DATABASE -tA > ~/gisdata/ma_load_script.sh
+psql -U $YOUR_SUPER_USER -c "SELECT Loader_Generate_Script(ARRAY['MA'], 'sh')" -d $YOUR_DATABASE -tA > ~/gisdata/ma_load_script.sh
 ```
 
 
