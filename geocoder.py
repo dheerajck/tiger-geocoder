@@ -1,5 +1,6 @@
 import os
 from enum import Enum
+from pprint import pprint
 
 import psycopg
 from dotenv import load_dotenv
@@ -31,6 +32,16 @@ class Database:
         # print(db_parameters)
         self.connection = psycopg.connect(**db_parameters)
 
+    def execute(self, query, parameters=None):
+        with self.connection.cursor() as cursor:
+            try:
+                cursor.execute(query, parameters)
+                # return cursor.fetchall()
+            except psycopg.Error as e:
+                pprint(e)
+                print()
+                return None
+
     def get_geocoded_data(self, address):
         """
         Tries to geocode given address and returns a dictionary containing the geocoded information
@@ -50,7 +61,7 @@ class Database:
             )
             result = cursor.fetchone()
         except psycopg.Error as e:
-            print(e)
+            pprint(e)
             return None
         finally:
             cursor.close()
