@@ -5,11 +5,10 @@ from pathlib import Path
 
 import psycopg
 from dotenv import load_dotenv
-
 from geocoder import Database
 
-load_dotenv(".env")
 
+load_dotenv(".env")
 
 PATH_DICT = {
     "UNZIPTOOL": os.getenv("UNZIPTOOL"),

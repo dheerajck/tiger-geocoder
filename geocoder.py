@@ -5,6 +5,7 @@ from pprint import pprint
 import psycopg
 from dotenv import load_dotenv
 
+
 load_dotenv(".env")
 
 db_parameters = {
