@@ -79,7 +79,7 @@ class Database:
             address = f"{' '.join(address[:6]).strip()}, {' '.join(address[6:-1]).strip()}"
 
             # Converting the rating into a confidence score
-            if rating == 1:
+            if rating in {0, 1}:
                 confidence = GeocodingConfidence.EXCELLENT
             elif rating <= 50:
                 confidence = GeocodingConfidence.FAIR
