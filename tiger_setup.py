@@ -1,11 +1,12 @@
 import os
 import subprocess
+import sys
+from pathlib import Path
 
 import psycopg
-from geocoder import Database
-
 from dotenv import load_dotenv
 
+from geocoder import Database
 
 load_dotenv(".env")
 
@@ -20,6 +21,7 @@ PATH_DICT = {
     "PGDATABASE": os.getenv("DB_NAME"),
     "PSQL": os.getenv("PSQL"),
     "GISDATA_FOLDER": os.getenv("GISDATA_FOLDER"),
+    "GEOCODER_STATES": os.getenv("GEOCODER_STATES"),
 }
 
 
@@ -41,6 +43,13 @@ def create_extension(db):
     except psycopg.Error as e:
         print(e)
         return None
+
+
+def create_folders():
+    folder_path = Path(PATH_DICT["GISDATA_FOLDER"])
+    folder_path.mkdir(parents=True, exist_ok=True)
+    temp_folder_path = folder_path / "temp"
+    temp_folder_path.mkdir(parents=True, exist_ok=True)
 
 
 def is_windows_operating_system():
@@ -145,7 +154,7 @@ def write_state_script(db, profile_name, list_of_states):
     cursor = db.connection.cursor()
 
     sql_command = f"SELECT Loader_Generate_Script(ARRAY{list_of_states}, %s)"
-    print(sql_command)
+
     try:
         cursor.execute(sql_command, (profile_name,))
         result = cursor.fetchone()
@@ -163,8 +172,12 @@ def write_state_script(db, profile_name, list_of_states):
 
 
 def run_script(string):
-    result = subprocess.run(string, shell=True, capture_output=True, text=True)
-    print(result.stdout)
+    process = subprocess.Popen(string, shell=True, stdout=subprocess.PIPE)
+    for c in iter(lambda: process.stdout.read(1), b""):
+        sys.stdout.buffer.write(c)
+
+    # result = subprocess.run(string, shell=True, capture_output=True, text=True)
+    # print(result.stdout)
 
 
 def create_index_and_clean_tiger_table(db):
@@ -206,27 +219,29 @@ def create_index_and_clean_tiger_table(db):
 
 
 if __name__ == "__main__":
-    database_name = "project_name"
     db = Database()
     if PATH_DICT["GISDATA_FOLDER"] in [None, ""]:
-        print("Create a folder first")
+        print("Folder name for gisdata folder is required to start setting up database")
         exit()
 
     create_extension(db)
+    create_folders()
 
     if is_windows_operating_system():
         os_name = "windows"
     else:
         os_name = "sh"
 
-    profile_name = "test"
+    profile_name = "new"
 
     create_profile(db, profile_name, os_name)
     update_path(db, profile_name, PATH_DICT)
     update_folder(db, PATH_DICT["GISDATA_FOLDER"])
+
     output = write_nation_script(db, profile_name)
-    # run_script(output)
-    list_of_states = ['MA']
+    run_script(output)
+    # list_of_states = ['MA']
+    list_of_states = PATH_DICT["GEOCODER_STATES"].split(",")
     output = write_state_script(db, profile_name, list_of_states)
     run_script(output)
     create_index_and_clean_tiger_table(db)
