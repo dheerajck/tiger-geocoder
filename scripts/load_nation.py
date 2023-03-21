@@ -29,6 +29,7 @@ SHP2PGSQL = "shp2pgsql"
 
 def load_national_data_caller():
     # Download and extract state data
+    cwd = os.getcwd()
     os.chdir(GISDATA_FOLDER)
 
     state_url = f"{BASE_URL}/STATE/tl_{YEAR}_us_state.zip"
@@ -147,3 +148,5 @@ def load_national_data_caller():
     )
 
     # Commit changes and close the connection
+
+    os.chdir(cwd)

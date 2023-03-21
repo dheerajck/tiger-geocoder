@@ -9,6 +9,11 @@ from geocoder import Database
 from dotenv import load_dotenv
 
 from .helpers import run_shp2pgsql, clear_temp
+import json
+
+
+with open('scripts/abbr - fips.json') as f:
+    ABBR_FIPS = json.load(f)
 
 load_dotenv(".env")
 
@@ -38,7 +43,7 @@ def get_fips_from_abbr(abbr):
     #     fips = 2
     # # add more elif statements for the remaining abbreviations
     # return fips
-    state_to_fips = {"MA": 25}
+    state_to_fips = ABBR_FIPS
 
     return state_to_fips.get(abbr, 0)
 
@@ -595,15 +600,17 @@ def load_state_data(abbr, fips):
 
 
 def load_states_data_caller():
+    cwd = os.getcwd()
     if GEOCODER_STATES == "*":
         print("'*' detected for STATES parameter. Adding data for all US states...")
-        GEOCODER_STATES_LIST = GEOCODER_STATES.split(",")
+        GEOCODER_STATES_LIST = list(ABBR_FIPS.keys())
     else:
         GEOCODER_STATES_LIST = GEOCODER_STATES.split(",")
 
+    print(f"Adding US states data for {GEOCODER_STATES_LIST}")
+
     for state in GEOCODER_STATES_LIST:
         abbr = state
-
         fips = get_fips_from_abbr(abbr)
 
         if fips == 0:
@@ -612,3 +619,5 @@ def load_states_data_caller():
             print(f"Loading state data for: {abbr} {fips}")
 
             load_state_data(abbr, fips)
+
+    os.chdir(cwd)
