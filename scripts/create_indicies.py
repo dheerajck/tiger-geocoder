@@ -16,3 +16,4 @@ def create_indicies():
     db.execute("vacuum (analyze, verbose) tiger.zip_lookup_base;")
     db.execute("vacuum (analyze, verbose) tiger.zip_state;")
     db.execute("vacuum (analyze, verbose) tiger.zip_state_loc;")
+    db.connection.commit()

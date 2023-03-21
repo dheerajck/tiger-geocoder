@@ -38,10 +38,19 @@ class Database:
             try:
                 cursor.execute(query, parameters)
                 # return cursor.fetchall()
+            except psycopg.errors.UniqueViolation as e:
+                print(query, e)
+            except psycopg.errors.DuplicateTable as e:
+                print(query, e)
+            except psycopg.errors.DuplicateObject as e:
+                print(query, e)
+            except psycopg.errors.UndefinedColumn as e:
+                print(query, e)
+
             except psycopg.Error as e:
-                pprint(e)
-                print()
-                return None
+                print(query)
+                raise e
+                # return None
 
     def get_geocoded_data(self, address):
         """

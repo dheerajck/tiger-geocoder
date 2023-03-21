@@ -66,9 +66,12 @@ def get_fips_files(url, fips):
     import re
     import urllib.request
 
-    response = urllib.request.urlopen(url)
-    content = response.read().decode('utf-8')
-
+    # response = urllib.request.urlopen(url)
+    # content = response.read().decode('utf-8')
+    # with open(url.replace("/", ""), "w") as f:
+    #     f.write(content)
+    with open(url.replace("/", "")) as f:
+        content = f.read()
     pattern = '(?=\"tl)(.*?)(?<=>)'
 
     files = re.findall(pattern, content)
@@ -126,6 +129,7 @@ def load_state_data(abbr, fips):
     section = "place"
     primary_key = "plcidfp"
 
+    print(section)
     download_extract(fips, section)
 
     common_sql(section, abbr, fips, primary_key, YEAR)
@@ -139,6 +143,8 @@ def load_state_data(abbr, fips):
     )
 
     db.execute(f"ALTER TABLE tiger_data.{abbr}_place ADD CONSTRAINT chk_statefp CHECK (statefp = '{fips}');")
+    db.connection.commit()
+    print("done")
 
     #############
     # Cousub
@@ -147,6 +153,7 @@ def load_state_data(abbr, fips):
     section = "cousub"
     primary_key = "cosbidfp"
 
+    print(section)
     download_extract(fips, section)
 
     common_sql(section, abbr, fips, primary_key, YEAR)
@@ -157,7 +164,8 @@ def load_state_data(abbr, fips):
     db.execute(
         f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_cousub_countyfp ON tiger_data.{abbr}_cousub USING btree(countyfp);"
     )
-
+    db.connection.commit()
+    print("done")
     #############
     # Tract
     #############
@@ -165,6 +173,7 @@ def load_state_data(abbr, fips):
     section = "tract"
     primary_key = "tract_id"
 
+    print(section)
     download_extract(fips, section)
 
     common_sql(section, abbr, fips, primary_key, YEAR)
@@ -172,6 +181,8 @@ def load_state_data(abbr, fips):
     db.execute(
         f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_tract_the_geom_gist ON tiger_data.{abbr}_tract USING gist(the_geom);"
     )
+    db.connection.commit()
+    print("done")
 
     #############
     # Faces
@@ -183,6 +194,7 @@ def load_state_data(abbr, fips):
     section = "faces"
     primary_key = "gid"
 
+    print(section)
     download_extract_urls_of_all_files(fips, section)
 
     dbf_files = []
@@ -203,6 +215,9 @@ def load_state_data(abbr, fips):
         f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_faces_countyfp ON tiger_data.{abbr}_faces USING btree (countyfp);"
     )
 
+    db.connection.commit()
+    print("done")
+
     #############
     # FeatNames
     #############
@@ -213,6 +228,7 @@ def load_state_data(abbr, fips):
     section = "featnames"
     primary_key = "gid"
 
+    print(section)
     download_extract_urls_of_all_files(fips, section)
 
     dbf_files = []
@@ -232,6 +248,9 @@ def load_state_data(abbr, fips):
         f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_featnames_tlid_statefp ON tiger_data.{abbr}_featnames USING btree (tlid,statefp);"
     )
 
+    db.connection.commit()
+    print("done")
+
     #############
     # Edges
     #############
@@ -242,6 +261,7 @@ def load_state_data(abbr, fips):
     section = "edges"
     primary_key = "gid"
 
+    print(section)
     download_extract_urls_of_all_files(fips, section)
 
     dbf_files = []
@@ -270,7 +290,7 @@ def load_state_data(abbr, fips):
     db.execute(
         f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edges_zipl ON tiger_data.{abbr}_edges USING btree (zipl);"
     )
-
+    db.connection.commit()
     db.execute(
         f"CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_zip_state_loc(CONSTRAINT pk_{abbr}_zip_state_loc PRIMARY KEY(zip,stusps,place)) INHERITS(tiger.zip_state_loc);"
     )
@@ -295,6 +315,8 @@ def load_state_data(abbr, fips):
     db.execute(
         f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_zip_lookup_base_citysnd ON tiger_data.{abbr}_zip_lookup_base USING btree(soundex(city));"
     )
+    db.connection.commit()
+    print("done")
 
     #############
     # Addr
@@ -306,6 +328,7 @@ def load_state_data(abbr, fips):
     section = "addr"
     primary_key = "gid"
 
+    print(section)
     download_extract_urls_of_all_files(fips, section)
 
     dbf_files = []
@@ -325,7 +348,7 @@ def load_state_data(abbr, fips):
     db.execute(
         f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_addr_zip ON tiger_data.{abbr}_addr USING btree (zip);"
     )
-
+    db.connection.commit()
     db.execute(
         f"CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_zip_state(CONSTRAINT pk_{abbr}_zip_state PRIMARY KEY(zip,stusps)) INHERITS(tiger.zip_state); "
     )
@@ -334,9 +357,12 @@ def load_state_data(abbr, fips):
     )
     db.execute(f"ALTER TABLE tiger_data.{abbr}_zip_state ADD CONSTRAINT chk_statefp CHECK (statefp = '{fips}');")
 
-    #############
-    # Tabblock
-    #############
+    db.connection.commit()
+    print("done")
+
+    # #############
+    # # Tabblock
+    # #############
 
     os.chdir(GISDATA_FOLDER)
 
@@ -345,8 +371,9 @@ def load_state_data(abbr, fips):
 
     os.chdir(TEMP_DIR)
     section = "tabblock20"
-    primary_key = "tabblock_id"
+    primary_key = "geoid"
 
+    print(section)
     download_extract(fips, section)
 
     common_sql(section, abbr, fips, primary_key, YEAR)
@@ -354,6 +381,9 @@ def load_state_data(abbr, fips):
     db.execute(
         f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_tabblock20_the_geom_gist ON tiger_data.{abbr}_tabblock20 USING gist(the_geom);"
     )
+
+    db.connection.commit()
+    print("done")
 
     #############
     # Block Group
@@ -365,12 +395,16 @@ def load_state_data(abbr, fips):
     section = "bg"
     primary_key = "bg_id"
 
+    print(section)
     download_extract(fips, section)
     common_sql(section, abbr, fips, primary_key, YEAR)
 
     db.execute(
         f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_bg_the_geom_gist ON tiger_data.{abbr}_bg USING gist(the_geom);"
     )
+
+    db.connection.commit()
+    print("done")
 
 
 def load_states_data_caller():
