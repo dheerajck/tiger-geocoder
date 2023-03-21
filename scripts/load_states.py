@@ -6,7 +6,7 @@ from geocoder import Database
 
 from dotenv import load_dotenv
 
-from .helpers import run_shp2pgsql, clear_temp, download
+from .helpers import clear_temp, download
 
 from .load_states_common_sql import common_sql
 
@@ -37,15 +37,7 @@ SHP2PGSQL = "shp2pgsql"
 
 
 def get_fips_from_abbr(abbr):
-    # fips = 0
-    # if abbr == "AL":
-    #     fips = 1
-    # elif abbr == "AK":
-    #     fips = 2
-    # # add more elif statements for the remaining abbreviations
-    # return fips
     state_to_fips = ABBR_FIPS
-
     return state_to_fips.get(abbr, 0)
 
 
@@ -87,7 +79,7 @@ def get_fips_files(url, fips):
     return matched
 
 
-def download_extract(db, fips, section):
+def download_extract(fips, section):
     os.chdir(GISDATA_FOLDER)
 
     current_url = f"{BASE_URL}/{section.upper()}/tl_{YEAR}_{fips}_{section}.zip"
@@ -95,8 +87,26 @@ def download_extract(db, fips, section):
     download(current_url)
 
     clear_temp(TEMP_DIR)
-    print(f"{GISDATA_FOLDER}/{BASE_PATH}/{section.upper()}")
     os.chdir(f"{GISDATA_FOLDER}/{BASE_PATH}/{section.upper()}")
+    for z in os.listdir(os.getcwd()):
+        if z.startswith(f"tl_{YEAR}_{fips}") and z.endswith(f"_{section}.zip"):
+            with zipfile.ZipFile(z) as place_zip:
+                place_zip.extractall(TEMP_DIR)
+
+    os.chdir(TEMP_DIR)
+
+
+def download_extract_urls_of_all_files(fips, section):
+    os.chdir(GISDATA_FOLDER)
+    files = get_fips_files(f"{BASE_URL}/{section.upper()}", fips)
+
+    for i in files:
+        url = f"{BASE_URL}/{section.upper()}/{i}"
+        download(url)
+
+    os.chdir(GISDATA_FOLDER / BASE_PATH / section.upper())
+    clear_temp(TEMP_DIR)
+
     for z in os.listdir(os.getcwd()):
         if z.startswith(f"tl_{YEAR}_{fips}") and z.endswith(f"_{section}.zip"):
             with zipfile.ZipFile(z) as place_zip:
@@ -113,12 +123,10 @@ def load_state_data(abbr, fips):
     # Place
     # #############
 
-    download_extract(db, fips, "place")
-
     section = "place"
     primary_key = "plcidfp"
 
-    download_extract(db, fips, section)
+    download_extract(fips, section)
 
     common_sql(section, abbr, fips, primary_key, YEAR)
 
@@ -139,7 +147,7 @@ def load_state_data(abbr, fips):
     section = "cousub"
     primary_key = "cosbidfp"
 
-    download_extract(db, fips, section)
+    download_extract(fips, section)
 
     common_sql(section, abbr, fips, primary_key, YEAR)
 
@@ -157,11 +165,9 @@ def load_state_data(abbr, fips):
     section = "tract"
     primary_key = "tract_id"
 
-    download_extract(db, fips, section)
+    download_extract(fips, section)
 
     common_sql(section, abbr, fips, primary_key, YEAR)
-
-    download_extract(db, fips, "tract")
 
     db.execute(
         f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_tract_the_geom_gist ON tiger_data.{abbr}_tract USING gist(the_geom);"
@@ -173,23 +179,11 @@ def load_state_data(abbr, fips):
 
     os.chdir(GISDATA_FOLDER)
 
-    files = get_fips_files(f"{BASE_URL}/FACES", fips)
-
-    for i in files:
-        url = f"{BASE_URL}/FACES/{i}"
-        download(url)
-
-    os.chdir(GISDATA_FOLDER / BASE_PATH / "FACES")
-    clear_temp(TEMP_DIR)
-
-    for z in os.listdir(os.getcwd()):
-        if z.startswith(f"tl_{YEAR}_{fips}") and z.endswith("_faces.zip"):
-            with zipfile.ZipFile(z) as place_zip:
-                place_zip.extractall(TEMP_DIR)
-
     os.chdir(TEMP_DIR)
     section = "faces"
     primary_key = "gid"
+
+    download_extract_urls_of_all_files(fips, section)
 
     dbf_files = []
 
@@ -215,24 +209,11 @@ def load_state_data(abbr, fips):
 
     os.chdir(GISDATA_FOLDER)
 
-    files = get_fips_files(f"{BASE_URL}/FEATNAMES", fips)
-
-    for i in files:
-        url = f"{BASE_URL}/FEATNAMES/{i}"
-        download(url)
-
-    os.chdir(GISDATA_FOLDER / BASE_PATH / "FEATNAMES")
-
-    clear_temp(TEMP_DIR)
-
-    for z in os.listdir(os.getcwd()):
-        if z.startswith(f"tl_{YEAR}_{fips}") and z.endswith("_featnames.zip"):
-            with zipfile.ZipFile(z) as place_zip:
-                place_zip.extractall(TEMP_DIR)
-
     os.chdir(TEMP_DIR)
     section = "featnames"
     primary_key = "gid"
+
+    download_extract_urls_of_all_files(fips, section)
 
     dbf_files = []
 
@@ -257,29 +238,14 @@ def load_state_data(abbr, fips):
 
     os.chdir(GISDATA_FOLDER)
 
-    files = get_fips_files(f"{BASE_URL}/EDGES", fips)
-
-    for i in files:
-        url = f"{BASE_URL}/EDGES/{i}"
-        download(url)
-
-    os.chdir(GISDATA_FOLDER / BASE_PATH / "EDGES")
-
-    clear_temp(TEMP_DIR)
-
-    db.execute("DROP SCHEMA IF EXISTS tiger_staging CASCADE;")
-    db.execute("CREATE SCHEMA tiger_staging;")
-
-    for z in os.listdir(os.getcwd()):
-        if z.startswith(f"tl_{YEAR}_{fips}") and z.endswith("_edges.zip"):
-            with zipfile.ZipFile(z) as place_zip:
-                place_zip.extractall(TEMP_DIR)
-
     os.chdir(TEMP_DIR)
     section = "edges"
     primary_key = "gid"
 
+    download_extract_urls_of_all_files(fips, section)
+
     dbf_files = []
+
     for z in os.listdir(os.getcwd()):
         if z.endswith(".dbf") and "edges" in z:
             dbf_files.append(z)
@@ -336,23 +302,11 @@ def load_state_data(abbr, fips):
 
     os.chdir(GISDATA_FOLDER)
 
-    files = get_fips_files(f"{BASE_URL}/ADDR", fips)
-
-    for i in files:
-        url = f"{BASE_URL}/ADDR/{i}"
-        download(url)
-
-    os.chdir(GISDATA_FOLDER / BASE_PATH / "ADDR")
-    clear_temp(TEMP_DIR)
-
-    for z in os.listdir(os.getcwd()):
-        if z.startswith(f"tl_{YEAR}_{fips}") and z.endswith("_addr.zip"):
-            with zipfile.ZipFile(z) as place_zip:
-                place_zip.extractall(TEMP_DIR)
-
     os.chdir(TEMP_DIR)
     section = "addr"
     primary_key = "gid"
+
+    download_extract_urls_of_all_files(fips, section)
 
     dbf_files = []
 
