@@ -12,10 +12,10 @@ def run_shp2pgsql(command, db_user, db_name):
 def download(url):
     response = requests.get(url, stream=True)
     total = int(response.headers.get('content-length', 0))
+
     zip_file_path = Path(url.lstrip("https://"))
 
     parent = zip_file_path.resolve().parent
-
     parent.mkdir(parents=True, exist_ok=True)
     start = 0
     with open(zip_file_path, 'wb') as f:
@@ -23,9 +23,13 @@ def download(url):
             if chunk:
                 size = f.write(chunk)
                 start += size
+                if total == 0:
+                    print("total size is not in content-length", end="\r")
+                    continue
                 p = (start / total) * 100
                 round_5 = 5 * round(p / 5)
-                print(f"{round_5}", end="\r")
+                print(round_5, end="\r")
+
     return zip_file_path
 
 

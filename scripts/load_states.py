@@ -8,7 +8,7 @@ from geocoder import Database
 
 from dotenv import load_dotenv
 
-from .helpers import run_shp2pgsql, clear_temp
+from .helpers import run_shp2pgsql, clear_temp, download
 import json
 
 
@@ -84,26 +84,6 @@ def get_fips_files(url, fips):
     matched = [file for file in files if f"tl_{YEAR}_{fips}" in file]
     print(matched)
     return matched
-
-
-def download(url):
-    response = requests.get(url, stream=True)
-    total = int(response.headers.get('content-length', 0))
-    print(url)
-    zip_file_path = Path(url.lstrip("https://"))
-
-    parent = zip_file_path.resolve().parent
-    parent.mkdir(parents=True, exist_ok=True)
-    start = 0
-    with open(zip_file_path, 'wb') as f:
-        for chunk in response.iter_content(chunk_size=1024):
-            if chunk:
-                size = f.write(chunk)
-                start += size
-                p = (start / total) * 100
-                round_5 = 5 * round(p / 5)
-                print(f"{round_5}", end="\r")
-    return zip_file_path
 
 
 def download_extract(db, fips, section):
@@ -231,18 +211,10 @@ def load_state_data(abbr, fips):
     os.chdir(GISDATA_FOLDER)
 
     files = get_fips_files(f"{BASE_URL}/FACES", fips)
-    print()
 
     for i in files:
         url = f"{BASE_URL}/FACES/{i}"
-        response = requests.get(url, stream=True)
-        zip_file_path = Path(url.lstrip("https://"))
-        parent = zip_file_path.resolve().parent
-        parent.mkdir(parents=True, exist_ok=True)
-
-        with open(zip_file_path, "wb") as file:
-            for chunk in response.iter_content(chunk_size=1024):
-                file.write(chunk)
+        download(url)
 
     os.chdir(GISDATA_FOLDER / BASE_PATH / "FACES")
     clear_temp(TEMP_DIR)
@@ -290,15 +262,7 @@ def load_state_data(abbr, fips):
 
     for i in files:
         url = f"{BASE_URL}/FEATNAMES/{i}"
-        response = requests.get(url, stream=True)
-        zip_file_path = Path(url.lstrip("https://"))
-
-        parent = zip_file_path.resolve().parent
-        parent.mkdir(parents=True, exist_ok=True)
-
-        with open(zip_file_path, "wb") as file:
-            for chunk in response.iter_content(chunk_size=1024):
-                file.write(chunk)
+        download(url)
 
     os.chdir(GISDATA_FOLDER / BASE_PATH / "FEATNAMES")
 
@@ -347,15 +311,7 @@ def load_state_data(abbr, fips):
 
     for i in files:
         url = f"{BASE_URL}/EDGES/{i}"
-        response = requests.get(url, stream=True)
-        zip_file_path = Path(url.lstrip("https://"))
-
-        parent = zip_file_path.resolve().parent
-        parent.mkdir(parents=True, exist_ok=True)
-
-        with open(zip_file_path, "wb") as file:
-            for chunk in response.iter_content(chunk_size=1024):
-                file.write(chunk)
+        download(url)
 
     os.chdir(GISDATA_FOLDER / BASE_PATH / "EDGES")
 
@@ -433,15 +389,7 @@ def load_state_data(abbr, fips):
 
     for i in files:
         url = f"{BASE_URL}/ADDR/{i}"
-        response = requests.get(url, stream=True)
-        zip_file_path = Path(url.lstrip("https://"))
-
-        parent = zip_file_path.resolve().parent
-        parent.mkdir(parents=True, exist_ok=True)
-
-        with open(zip_file_path, "wb") as file:
-            for chunk in response.iter_content(chunk_size=1024):
-                file.write(chunk)
+        download(url)
 
     os.chdir(GISDATA_FOLDER / BASE_PATH / "ADDR")
     clear_temp(TEMP_DIR)
@@ -494,25 +442,7 @@ def load_state_data(abbr, fips):
     # url = f"{BASE_URL}/TABBLOCK/tl_{YEAR}_{fips}_tabblock10.zip"
     url = f"{BASE_URL}/TABBLOCK20/tl_{YEAR}_{fips}_tabblock20.zip"
 
-    response = requests.get(url, stream=True)
-
-    # total = int(response.headers.get('content-length', 0))
-    zip_file_path = Path(url.lstrip("https://"))
-    print(zip_file_path)
-
-    parent = zip_file_path.resolve().parent
-
-    parent.mkdir(parents=True, exist_ok=True)
-    start = 0
-    with open(zip_file_path, 'wb') as f:
-        for chunk in response.iter_content(chunk_size=1024):
-            if chunk:
-                f.write(chunk)
-                # size = f.write(chunk)
-                # start += size
-                # p = (start / total) * 100
-                # round_5 = 5 * round(p / 5)
-                # print(f"{round_5}", end="\r")
+    download(url)
 
     clear_temp(TEMP_DIR)
     os.chdir(GISDATA_FOLDER / BASE_PATH / "TABBLOCK20")
@@ -550,23 +480,7 @@ def load_state_data(abbr, fips):
 
     os.chdir(GISDATA_FOLDER)
     url = f"{BASE_URL}/BG/tl_{YEAR}_{fips}_bg.zip"
-    response = requests.get(url, stream=True)
-    # total = int(response.headers.get('content-length', 0))
-    zip_file_path = Path(url.lstrip("https://"))
-
-    parent = zip_file_path.resolve().parent
-
-    parent.mkdir(parents=True, exist_ok=True)
-    start = 0
-    with open(zip_file_path, 'wb') as f:
-        for chunk in response.iter_content(chunk_size=1024):
-            if chunk:
-                f.write(chunk)
-                # size = f.write(chunk)
-                # start += size
-                # p = (start / total) * 100
-                # round_5 = 5 * round(p / 5)
-                # print(f"{round_5}", end="\r")
+    download(url)
 
     clear_temp(TEMP_DIR)
     os.chdir(GISDATA_FOLDER / BASE_PATH / "BG")
