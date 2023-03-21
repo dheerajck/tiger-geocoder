@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 import sys
@@ -6,7 +7,6 @@ from pathlib import Path
 import psycopg
 from dotenv import load_dotenv
 from geocoder import Database
-
 
 load_dotenv(".env")
 
@@ -239,7 +239,13 @@ if __name__ == "__main__":
     output = write_nation_script(db, profile_name)
     run_script(output)
     # list_of_states = ['MA']
-    list_of_states = PATH_DICT["GEOCODER_STATES"].split(",")
+    list_of_states_string = PATH_DICT["GEOCODER_STATES"]
+    if list_of_states_string == "*":
+        with open("abbr - fips.json") as f:
+            list_of_states = list(json.load(f).keys())
+    else:
+        list_of_states = list_of_states_string.split(",")
+
     output = write_state_script(db, profile_name, list_of_states)
     run_script(output)
     create_index_and_clean_tiger_table(db)
