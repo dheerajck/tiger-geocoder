@@ -11,9 +11,6 @@ from .helpers import download, run_shp2pgsql, clear_temp
 
 load_dotenv(".env")
 
-DB_USER = os.getenv("DB_USER")
-DB_NAME = os.getenv("DB_NAME")
-
 GISDATA_FOLDER = os.getenv("GISDATA_FOLDER")
 PSQL = os.getenv("PSQL")
 
@@ -59,7 +56,7 @@ def load_national_data_caller():
     )
 
     command = f"shp2pgsql -D -c -s 4269 -g the_geom -W 'latin1' tl_{YEAR}_us_state.dbf tiger_staging.state"
-    run_shp2pgsql(command, DB_USER, DB_NAME)
+    run_shp2pgsql(command)
 
     db.execute("SELECT loader_load_staged_data(lower('state'), lower('state_all')); ")
 
@@ -107,7 +104,7 @@ def load_national_data_caller():
     #         cur.copy_from(pipe, "tiger_staging.county")
 
     command = f"shp2pgsql -D -c -s 4269 -g the_geom -W 'latin1' tl_{YEAR}_us_county.dbf tiger_staging.county"
-    run_shp2pgsql(command, DB_USER, DB_NAME)
+    run_shp2pgsql(command)
 
     # Rename column geoid to cntyidfp and load staged data
 
