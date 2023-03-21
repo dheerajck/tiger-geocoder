@@ -78,14 +78,13 @@ def create_profile(db, profile_name, operating_system):
         return None
 
 
-def update_folder(db, folder_name):
-    if folder_name[-1] in ["/", "\\"]:
-        folder_name = folder_name[:-1]
+def update_folder(db, folder_path):
+    folder_path = str(Path(folder_path).resolve())
     cursor = db.connection.cursor()
-    print(folder_name)
+
     sql_command = "UPDATE tiger.loader_variables SET staging_fold=%s;"
     try:
-        cursor.execute(sql_command, (folder_name,))
+        cursor.execute(sql_command, (folder_path,))
         # print(cursor.fetchone())
 
     except psycopg.Error as e:
