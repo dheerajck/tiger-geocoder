@@ -2,8 +2,6 @@ import os
 import zipfile
 from pathlib import Path
 
-import requests
-
 from geocoder import Database
 
 from dotenv import load_dotenv
