@@ -1,6 +1,4 @@
 import os
-
-import subprocess
 import zipfile
 from pathlib import Path
 
@@ -72,8 +70,7 @@ def get_fips_files(url, fips):
 
     response = urllib.request.urlopen(url)
     content = response.read().decode('utf-8')
-    with open("test1.html", 'w') as f:
-        f.write(content)
+
     pattern = '(?=\"tl)(.*?)(?<=>)'
 
     files = re.findall(pattern, content)
