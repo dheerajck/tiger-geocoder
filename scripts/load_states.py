@@ -455,7 +455,7 @@ def load_state_data(abbr, fips):
     os.chdir(TEMP_DIR)
 
     db.execute(
-        f"CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_tabblock(CONSTRAINT pk_{abbr}_tabblock PRIMARY KEY (tabblock_id)) INHERITS(tiger.tabblock);"
+        f"CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_tabblock20(CONSTRAINT pk_{abbr}_tabblock20 PRIMARY KEY (tabblock_id)) INHERITS(tiger.tabblock);"
     )
     run_shp2pgsql(
         f"shp2pgsql -D -c -s 4269 -g the_geom -W 'latin1' tl_{YEAR}_{fips}_tabblock20.dbf tiger_staging.{abbr}_tabblock20",
@@ -464,13 +464,13 @@ def load_state_data(abbr, fips):
     )
 
     db.execute(
-        f"ALTER TABLE tiger_staging.{abbr}_tabblock20 RENAME geoid10 TO tabblock_id;  SELECT loader_load_staged_data(lower('{abbr}_tabblock20'), lower('{abbr}_tabblock')); "
+        f"ALTER TABLE tiger_staging.{abbr}_tabblock20 RENAME geoid10 TO tabblock_id;  SELECT loader_load_staged_data(lower('{abbr}_tabblock20'), lower('{abbr}_tabblock20')); "
     )
-    db.execute(f"ALTER TABLE tiger_data.{abbr}_tabblock ADD CONSTRAINT chk_statefp CHECK (statefp = '{fips}');")
+    db.execute(f"ALTER TABLE tiger_data.{abbr}_tabblock20 ADD CONSTRAINT chk_statefp CHECK (statefp = '{fips}');")
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_tabblock_the_geom_gist ON tiger_data.{abbr}_tabblock USING gist(the_geom);"
+        f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_tabblock20_the_geom_gist ON tiger_data.{abbr}_tabblock20 USING gist(the_geom);"
     )
-    db.execute(f"vacuum analyze tiger_data.{abbr}_tabblock;")
+    db.execute(f"vacuum analyze tiger_data.{abbr}_tabblock20;")
 
     #############
     # Block Group
