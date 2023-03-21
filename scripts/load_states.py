@@ -7,6 +7,9 @@ from geocoder import Database
 from dotenv import load_dotenv
 
 from .helpers import run_shp2pgsql, clear_temp, download
+
+from .load_states_common_sql import common_sql
+
 import json
 
 
@@ -91,9 +94,6 @@ def download_extract(db, fips, section):
 
     download(current_url)
 
-    db.execute("DROP SCHEMA IF EXISTS tiger_staging CASCADE;")
-    db.execute("CREATE SCHEMA tiger_staging;")
-
     clear_temp(TEMP_DIR)
     print(f"{GISDATA_FOLDER}/{BASE_PATH}/{section.upper()}")
     os.chdir(f"{GISDATA_FOLDER}/{BASE_PATH}/{section.upper()}")
@@ -110,27 +110,17 @@ def load_state_data(abbr, fips):
     abbr = abbr.lower()
 
     # #############
-    # # Place
+    # Place
     # #############
 
     download_extract(db, fips, "place")
 
-    db.execute(
-        f"CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_place(CONSTRAINT pk_{abbr}_place PRIMARY KEY (plcidfp) ) INHERITS(tiger.place);"
-    )
+    section = "place"
+    primary_key = "plcidfp"
 
-    run_shp2pgsql(
-        f"shp2pgsql -D -c -s 4269 -g the_geom -W 'latin1' tl_{YEAR}_{fips}_place.dbf tiger_staging.{abbr}_place",
-        DB_USER,
-        DB_NAME,
-    )
+    download_extract(db, fips, section)
 
-    db.execute(
-        f"""
-        ALTER TABLE tiger_staging.{abbr}_place RENAME geoid TO plcidfp;
-        SELECT loader_load_staged_data(lower('{abbr}_place'), lower('{abbr}_place'));
-        ALTER TABLE tiger_data.{abbr}_place ADD CONSTRAINT uidx_{abbr}_place_gid UNIQUE (gid);"""
-    )
+    common_sql(section, abbr, fips, primary_key, YEAR)
 
     db.execute(
         f"CREATE INDEX IF NOT EXISTS idx_{abbr}_place_soundex_name ON tiger_data.{abbr}_place USING btree (soundex(name));"
@@ -146,29 +136,13 @@ def load_state_data(abbr, fips):
     # Cousub
     #############
 
-    download_extract(db, fips, "cousub")
+    section = "cousub"
+    primary_key = "cosbidfp"
 
-    db.execute(
-        f"CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_cousub(CONSTRAINT pk_{abbr}_cousub PRIMARY KEY (cosbidfp), CONSTRAINT uidx_{abbr}_cousub_gid UNIQUE (gid)) INHERITS(tiger.cousub);"
-    )
+    download_extract(db, fips, section)
 
-    run_shp2pgsql(
-        f"shp2pgsql -D -c -s 4269 -g the_geom -W 'latin1' tl_{YEAR}_{fips}_cousub.dbf tiger_staging.{abbr}_cousub",
-        DB_USER,
-        DB_NAME,
-    )
+    common_sql(section, abbr, fips, primary_key, YEAR)
 
-    db.execute(
-        f"""
-        ALTER TABLE tiger_staging.{abbr}_cousub RENAME geoid TO cosbidfp;
-        SELECT loader_load_staged_data(lower('{abbr}_cousub'), lower('{abbr}_cousub'));
-        ALTER TABLE tiger_data.{abbr}_cousub ADD CONSTRAINT chk_statefp CHECK (statefp = '{fips}');
-        """
-    )
-
-    db.execute(
-        f"ALTER TABLE tiger_staging.{abbr}_cousub RENAME geoid TO cosbidfp;SELECT loader_load_staged_data(lower('{abbr}_cousub'), lower('{abbr}_cousub')); ALTER TABLE tiger_data.{abbr}_cousub ADD CONSTRAINT chk_statefp CHECK (statefp = '{fips}');"
-    )
     db.execute(
         f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_cousub_the_geom_gist ON tiger_data.{abbr}_cousub USING gist(the_geom);"
     )
@@ -180,27 +154,18 @@ def load_state_data(abbr, fips):
     # Tract
     #############
 
+    section = "tract"
+    primary_key = "tract_id"
+
+    download_extract(db, fips, section)
+
+    common_sql(section, abbr, fips, primary_key, YEAR)
+
     download_extract(db, fips, "tract")
-
-    db.execute(
-        f"CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_tract(CONSTRAINT pk_{abbr}_tract PRIMARY KEY (tract_id) ) INHERITS(tiger.tract);"
-    )
-
-    run_shp2pgsql(
-        f"shp2pgsql -D -c -s 4269 -g the_geom -W 'latin1' tl_{YEAR}_{fips}_tract.dbf tiger_staging.{abbr}_tract",
-        DB_USER,
-        DB_NAME,
-    )
-
-    db.execute(
-        f"ALTER TABLE tiger_staging.{abbr}_tract RENAME geoid TO tract_id;  SELECT loader_load_staged_data(lower('{abbr}_tract'), lower('{abbr}_tract'));"
-    )
 
     db.execute(
         f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_tract_the_geom_gist ON tiger_data.{abbr}_tract USING gist(the_geom);"
     )
-    db.execute(f"VACUUM ANALYZE tiger_data.{abbr}_tract;")
-    db.execute(f"ALTER TABLE tiger_data.{abbr}_tract ADD CONSTRAINT chk_statefp CHECK (statefp = '{fips}');")
 
     #############
     # Faces
@@ -217,26 +182,22 @@ def load_state_data(abbr, fips):
     os.chdir(GISDATA_FOLDER / BASE_PATH / "FACES")
     clear_temp(TEMP_DIR)
 
-    db.execute("DROP SCHEMA IF EXISTS tiger_staging CASCADE;")
-    db.execute("CREATE SCHEMA tiger_staging;")
-
     for z in os.listdir(os.getcwd()):
         if z.startswith(f"tl_{YEAR}_{fips}") and z.endswith("_faces.zip"):
             with zipfile.ZipFile(z) as place_zip:
                 place_zip.extractall(TEMP_DIR)
 
     os.chdir(TEMP_DIR)
+    section = "faces"
+    primary_key = "gid"
 
-    db.execute(
-        f"CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_faces(CONSTRAINT pk_{abbr}_faces PRIMARY KEY (gid)) INHERITS(tiger.faces);"
-    )
+    dbf_files = []
 
     for z in os.listdir(os.getcwd()):
         if z.endswith(".dbf") and "faces" in z:
-            run_shp2pgsql(
-                f"shp2pgsql -D -s 4269 -g the_geom -W 'latin1' {z} tiger_staging.{abbr}_faces", DB_USER, DB_NAME
-            )
-            db.execute(f"SELECT loader_load_staged_data(lower('{abbr}_faces'), lower('{abbr}_faces'));")
+            dbf_files.append(z)
+
+    common_sql(section, abbr, fips, primary_key, YEAR, dbf_files)
 
     db.execute(
         f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_faces_the_geom_gist ON tiger_data.{abbr}_faces USING gist(the_geom);"
@@ -247,8 +208,6 @@ def load_state_data(abbr, fips):
     db.execute(
         f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_faces_countyfp ON tiger_data.{abbr}_faces USING btree (countyfp);"
     )
-    db.execute(f"ALTER TABLE tiger_data.{abbr}_faces ADD CONSTRAINT chk_statefp CHECK (statefp = '{fips}');")
-    db.execute(f"vacuum analyze tiger_data.{abbr}_faces;")
 
     #############
     # FeatNames
@@ -266,26 +225,21 @@ def load_state_data(abbr, fips):
 
     clear_temp(TEMP_DIR)
 
-    db.execute("DROP SCHEMA IF EXISTS tiger_staging CASCADE;")
-    db.execute("CREATE SCHEMA tiger_staging;")
-
     for z in os.listdir(os.getcwd()):
         if z.startswith(f"tl_{YEAR}_{fips}") and z.endswith("_featnames.zip"):
             with zipfile.ZipFile(z) as place_zip:
                 place_zip.extractall(TEMP_DIR)
 
     os.chdir(TEMP_DIR)
+    section = "featnames"
+    primary_key = "gid"
 
-    db.execute(
-        f"CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_featnames(CONSTRAINT pk_{abbr}_featnames PRIMARY KEY (gid)) INHERITS(tiger.featnames);ALTER TABLE tiger_data.{abbr}_featnames ALTER COLUMN statefp SET DEFAULT '{fips}';"
-    )
+    dbf_files = []
 
     for z in os.listdir(os.getcwd()):
         if z.endswith(".dbf") and "featnames" in z:
-            run_shp2pgsql(
-                f"shp2pgsql -D  -s 4269 -g the_geom -W 'latin1' {z} tiger_staging.{abbr}_featnames", DB_USER, DB_NAME
-            )
-            db.execute(f"SELECT loader_load_staged_data(lower('{abbr}_featnames'), lower('{abbr}_featnames'));")
+            dbf_files.append(z)
+    common_sql(section, abbr, fips, primary_key, YEAR, dbf_files)
 
     db.execute(
         f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_featnames_snd_name ON tiger_data.{abbr}_featnames USING btree (soundex(name));"
@@ -296,8 +250,6 @@ def load_state_data(abbr, fips):
     db.execute(
         f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_featnames_tlid_statefp ON tiger_data.{abbr}_featnames USING btree (tlid,statefp);"
     )
-    db.execute(f"ALTER TABLE tiger_data.{abbr}_featnames ADD CONSTRAINT chk_statefp CHECK (statefp = '{fips}');")
-    db.execute(f"vacuum analyze tiger_data.{abbr}_featnames;")
 
     #############
     # Edges
@@ -324,18 +276,16 @@ def load_state_data(abbr, fips):
                 place_zip.extractall(TEMP_DIR)
 
     os.chdir(TEMP_DIR)
+    section = "edges"
+    primary_key = "gid"
 
-    db.execute(
-        f"CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_edges(CONSTRAINT pk_{abbr}_edges PRIMARY KEY (gid)) INHERITS(tiger.edges);"
-    )
+    dbf_files = []
     for z in os.listdir(os.getcwd()):
         if z.endswith(".dbf") and "edges" in z:
-            run_shp2pgsql(
-                f"shp2pgsql -D   -D -s 4269 -g the_geom -W 'latin1' {z} tiger_staging.{abbr}_edges", DB_USER, DB_NAME
-            )
-            db.execute(f"SELECT loader_load_staged_data(lower('{abbr}_edges'), lower('{abbr}_edges'));")
+            dbf_files.append(z)
 
-    db.execute(f"ALTER TABLE tiger_data.{abbr}_edges ADD CONSTRAINT chk_statefp CHECK (statefp = '{fips}');")
+    common_sql(section, abbr, fips, primary_key, YEAR, dbf_files)
+
     db.execute(
         f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edges_tlid ON tiger_data.{abbr}_edges USING btree (tlid);"
     )
@@ -354,6 +304,7 @@ def load_state_data(abbr, fips):
     db.execute(
         f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edges_zipl ON tiger_data.{abbr}_edges USING btree (zipl);"
     )
+
     db.execute(
         f"CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_zip_state_loc(CONSTRAINT pk_{abbr}_zip_state_loc PRIMARY KEY(zip,stusps,place)) INHERITS(tiger.zip_state_loc);"
     )
@@ -363,9 +314,11 @@ def load_state_data(abbr, fips):
     db.execute(
         f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_zip_state_loc_place ON tiger_data.{abbr}_zip_state_loc USING btree(soundex(place));"
     )
+
     db.execute(f"ALTER TABLE tiger_data.{abbr}_zip_state_loc ADD CONSTRAINT chk_statefp CHECK (statefp = '{fips}');")
-    db.execute(f"vacuum analyze tiger_data.{abbr}_edges;")
+
     db.execute(f"vacuum analyze tiger_data.{abbr}_zip_state_loc;")
+
     db.execute(
         f"CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_zip_lookup_base(CONSTRAINT pk_{abbr}_zip_state_loc_city PRIMARY KEY(zip,state, county, city, statefp)) INHERITS(tiger.zip_lookup_base);"
     )
@@ -392,27 +345,23 @@ def load_state_data(abbr, fips):
     os.chdir(GISDATA_FOLDER / BASE_PATH / "ADDR")
     clear_temp(TEMP_DIR)
 
-    db.execute("DROP SCHEMA IF EXISTS tiger_staging CASCADE;")
-    db.execute("CREATE SCHEMA tiger_staging;")
-
     for z in os.listdir(os.getcwd()):
         if z.startswith(f"tl_{YEAR}_{fips}") and z.endswith("_addr.zip"):
             with zipfile.ZipFile(z) as place_zip:
                 place_zip.extractall(TEMP_DIR)
 
     os.chdir(TEMP_DIR)
+    section = "addr"
+    primary_key = "gid"
 
-    db.execute(
-        f"CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_addr(CONSTRAINT pk_{abbr}_addr PRIMARY KEY (gid)) INHERITS(tiger.addr);ALTER TABLE tiger_data.{abbr}_addr ALTER COLUMN statefp SET DEFAULT '{fips}';"
-    )
+    dbf_files = []
+
     for z in os.listdir(os.getcwd()):
         if z.endswith(".dbf") and "addr" in z:
-            run_shp2pgsql(
-                f"shp2pgsql -D -s 4269 -g the_geom -W 'latin1' {z} tiger_staging.{abbr}_addr", DB_USER, DB_NAME
-            )
-            db.execute(f"SELECT loader_load_staged_data(lower('{abbr}_addr'), lower('{abbr}_addr'));")
+            dbf_files.append(z)
 
-    db.execute(f"ALTER TABLE tiger_data.{abbr}_addr ADD CONSTRAINT chk_statefp CHECK (statefp = '{fips}');")
+    common_sql(section, abbr, fips, primary_key, YEAR, dbf_files)
+
     db.execute(
         f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_addr_least_address ON tiger_data.{abbr}_addr USING btree (least_hn(fromhn,tohn) );"
     )
@@ -422,6 +371,7 @@ def load_state_data(abbr, fips):
     db.execute(
         f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_addr_zip ON tiger_data.{abbr}_addr USING btree (zip);"
     )
+
     db.execute(
         f"CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_zip_state(CONSTRAINT pk_{abbr}_zip_state PRIMARY KEY(zip,stusps)) INHERITS(tiger.zip_state); "
     )
@@ -429,7 +379,6 @@ def load_state_data(abbr, fips):
         f"INSERT INTO tiger_data.{abbr}_zip_state(zip,stusps,statefp) SELECT DISTINCT zip, '{abbr}', '{fips}' FROM tiger_data.{abbr}_addr WHERE zip is not null;"
     )
     db.execute(f"ALTER TABLE tiger_data.{abbr}_zip_state ADD CONSTRAINT chk_statefp CHECK (statefp = '{fips}');")
-    db.execute(f"vacuum analyze tiger_data.{abbr}_addr;")
 
     #############
     # Tabblock
@@ -444,8 +393,6 @@ def load_state_data(abbr, fips):
 
     clear_temp(TEMP_DIR)
     os.chdir(GISDATA_FOLDER / BASE_PATH / "TABBLOCK20")
-    db.execute("DROP SCHEMA IF EXISTS tiger_staging CASCADE;")
-    db.execute("CREATE SCHEMA tiger_staging;")
 
     for z in os.listdir(os.getcwd()):
         if z.startswith(f"tl_{YEAR}_{fips}") and z.endswith("_tabblock20.zip"):
@@ -453,24 +400,14 @@ def load_state_data(abbr, fips):
                 place_zip.extractall(TEMP_DIR)
 
     os.chdir(TEMP_DIR)
+    section = "tabblock20"
+    primary_key = "tabblock_id"
 
-    db.execute(
-        f"CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_tabblock20(CONSTRAINT pk_{abbr}_tabblock20 PRIMARY KEY (tabblock_id)) INHERITS(tiger.tabblock);"
-    )
-    run_shp2pgsql(
-        f"shp2pgsql -D -c -s 4269 -g the_geom -W 'latin1' tl_{YEAR}_{fips}_tabblock20.dbf tiger_staging.{abbr}_tabblock20",
-        DB_USER,
-        DB_NAME,
-    )
+    common_sql(section, abbr, fips, primary_key, YEAR)
 
-    db.execute(
-        f"ALTER TABLE tiger_staging.{abbr}_tabblock20 RENAME geoid10 TO tabblock_id;  SELECT loader_load_staged_data(lower('{abbr}_tabblock20'), lower('{abbr}_tabblock20')); "
-    )
-    db.execute(f"ALTER TABLE tiger_data.{abbr}_tabblock20 ADD CONSTRAINT chk_statefp CHECK (statefp = '{fips}');")
     db.execute(
         f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_tabblock20_the_geom_gist ON tiger_data.{abbr}_tabblock20 USING gist(the_geom);"
     )
-    db.execute(f"vacuum analyze tiger_data.{abbr}_tabblock20;")
 
     #############
     # Block Group
@@ -482,8 +419,6 @@ def load_state_data(abbr, fips):
 
     clear_temp(TEMP_DIR)
     os.chdir(GISDATA_FOLDER / BASE_PATH / "BG")
-    db.execute("DROP SCHEMA IF EXISTS tiger_staging CASCADE;")
-    db.execute("CREATE SCHEMA tiger_staging;")
 
     for z in os.listdir(os.getcwd()):
         if z.startswith(f"tl_{YEAR}_{fips}") and z.endswith("_bg.zip"):
@@ -491,24 +426,14 @@ def load_state_data(abbr, fips):
                 place_zip.extractall(TEMP_DIR)
 
     os.chdir(TEMP_DIR)
+    section = "bg"
+    primary_key = "bg_id"
 
-    db.execute(
-        f"CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_bg(CONSTRAINT pk_{abbr}_bg PRIMARY KEY (bg_id)) INHERITS(tiger.bg);"
-    )
-    run_shp2pgsql(
-        f"shp2pgsql -D -c -s 4269 -g the_geom -W 'latin1' tl_{YEAR}_{fips}_bg.dbf tiger_staging.{abbr}_bg",
-        DB_USER,
-        DB_NAME,
-    )
+    common_sql(section, abbr, fips, primary_key, YEAR)
 
-    db.execute(
-        f"ALTER TABLE tiger_staging.{abbr}_bg RENAME geoid TO bg_id;  SELECT loader_load_staged_data(lower('{abbr}_bg'), lower('{abbr}_bg')); "
-    )
-    db.execute(f"ALTER TABLE tiger_data.{abbr}_bg ADD CONSTRAINT chk_statefp CHECK (statefp = '{fips}');")
     db.execute(
         f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_bg_the_geom_gist ON tiger_data.{abbr}_bg USING gist(the_geom);"
     )
-    db.execute(f"vacuum analyze tiger_data.{abbr}_bg;")
 
 
 def load_states_data_caller():
