@@ -341,21 +341,13 @@ def load_state_data(abbr, fips):
     os.chdir(GISDATA_FOLDER)
 
     # url = f"{BASE_URL}/TABBLOCK/tl_{YEAR}_{fips}_tabblock10.zip"
-    url = f"{BASE_URL}/TABBLOCK20/tl_{YEAR}_{fips}_tabblock20.zip"
-
-    download(url)
-
-    clear_temp(TEMP_DIR)
-    os.chdir(GISDATA_FOLDER / BASE_PATH / "TABBLOCK20")
-
-    for z in os.listdir(os.getcwd()):
-        if z.startswith(f"tl_{YEAR}_{fips}") and z.endswith("_tabblock20.zip"):
-            with zipfile.ZipFile(z) as place_zip:
-                place_zip.extractall(TEMP_DIR)
+    # url = f"{BASE_URL}/TABBLOCK20/tl_{YEAR}_{fips}_tabblock20.zip"
 
     os.chdir(TEMP_DIR)
     section = "tabblock20"
     primary_key = "tabblock_id"
+
+    download_extract(fips, section)
 
     common_sql(section, abbr, fips, primary_key, YEAR)
 
@@ -368,21 +360,12 @@ def load_state_data(abbr, fips):
     #############
 
     os.chdir(GISDATA_FOLDER)
-    url = f"{BASE_URL}/BG/tl_{YEAR}_{fips}_bg.zip"
-    download(url)
-
-    clear_temp(TEMP_DIR)
-    os.chdir(GISDATA_FOLDER / BASE_PATH / "BG")
-
-    for z in os.listdir(os.getcwd()):
-        if z.startswith(f"tl_{YEAR}_{fips}") and z.endswith("_bg.zip"):
-            with zipfile.ZipFile(z) as place_zip:
-                place_zip.extractall(TEMP_DIR)
 
     os.chdir(TEMP_DIR)
     section = "bg"
     primary_key = "bg_id"
 
+    download_extract(fips, section)
     common_sql(section, abbr, fips, primary_key, YEAR)
 
     db.execute(
