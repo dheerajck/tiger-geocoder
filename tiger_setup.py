@@ -144,7 +144,7 @@ def write_nation_script(db, profile_name):
         print(e)
         return None
     else:
-        with open("test.sh", "w") as f:
+        with open("load_nation.sh", "w") as f:
             f.write(result[0])
             return result[0]
 
@@ -165,7 +165,7 @@ def write_state_script(db, profile_name, list_of_states):
         return f"echo {e}"
 
     else:
-        with open("teststate.sh", "w") as f:
+        with open("load_states.sh", "w") as f:
             f.write(result[0])
             return result[0]
 
