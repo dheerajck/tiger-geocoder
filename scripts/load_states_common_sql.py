@@ -2,7 +2,7 @@ from geocoder import Database
 from .helpers import run_shp2pgsql
 
 
-def common_sql(section, abbr, fips, primary_key, YEAR, dbf_files=None):
+def create_section_table_and_add_data(section, abbr, fips, primary_key, YEAR, dbf_files=None):
     db = Database()
 
     # db.execute(
