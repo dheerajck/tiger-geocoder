@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 
 load_dotenv(".env")
+
 GISDATA_FOLDER = os.getenv("GISDATA_FOLDER")
 GISDATA_FOLDER = Path(GISDATA_FOLDER)
 

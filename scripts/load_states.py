@@ -11,25 +11,28 @@ from geocoder import Database
 from .helpers import clear_temp, download
 from .load_states_common_sql import common_sql
 
-with open('scripts/abbr - fips.json') as f:
-    ABBR_FIPS = json.load(f)
-
 load_dotenv(".env")
 
 DB_USER = os.getenv("DB_USER")
 DB_NAME = os.getenv("DB_NAME")
 
 GISDATA_FOLDER = os.getenv("GISDATA_FOLDER")
-PSQL = os.getenv("PSQL")
 GEOCODER_STATES = os.getenv("GEOCODER_STATES")
+YEAR = os.getenv("YEAR")
+
+# PSQL = os.getenv("PSQL")
+# SHP2PGSQL = os.getenv("SHP2PGSQL")
+
 
 GISDATA_FOLDER = Path(GISDATA_FOLDER)
 TEMP_DIR = Path(f"{GISDATA_FOLDER}/temp/")
 
-YEAR = "2022"
 BASE_PATH = f"www2.census.gov/geo/tiger/TIGER{YEAR}"
 BASE_URL = f"https://{BASE_PATH}"
-SHP2PGSQL = "shp2pgsql"
+
+
+with open('scripts/abbr - fips.json') as f:
+    ABBR_FIPS = json.load(f)
 
 
 fips_files_matching_pattern = re.compile('(?=\"tl)(.*?)(?<=>)')
@@ -60,8 +63,6 @@ def get_fips_files(url, fips):
 
     files = ['tl_2021_01_test1\">', 'tl_2021_02_test2\">']
     final_files= ['tl_2021_01_test1', 'tl_2021_02_test2']
-    
-
     """
 
     # import urllib.request

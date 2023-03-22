@@ -12,16 +12,15 @@ from .helpers import download, run_shp2pgsql, clear_temp
 load_dotenv(".env")
 
 GISDATA_FOLDER = os.getenv("GISDATA_FOLDER")
-PSQL = os.getenv("PSQL")
+YEAR = os.getenv("YEAR")
+
+SHP2PGSQL = os.getenv("SHP2PGSQL")
 
 GISDATA_FOLDER = Path(GISDATA_FOLDER)
 TEMP_DIR = Path(f"{GISDATA_FOLDER}/temp/")
 
-YEAR = "2022"
 BASE_PATH = f"www2.census.gov/geo/tiger/TIGER{YEAR}"
 BASE_URL = f"https://{BASE_PATH}"
-
-SHP2PGSQL = "shp2pgsql"
 
 
 def load_national_data_caller():
