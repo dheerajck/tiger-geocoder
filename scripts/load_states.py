@@ -412,7 +412,7 @@ def load_state_data(abbr, fips):
 
 
 def load_states_data_caller():
-    cwd = os.getcwd()
+    current_working_directory = os.getcwd()
     if GEOCODER_STATES == "*":
         print("'*' detected for STATES parameter. Adding data for all US states...")
         GEOCODER_STATES_LIST = list(ABBR_FIPS.keys())
@@ -429,7 +429,6 @@ def load_states_data_caller():
             print(f"Error: f{abbr} is not a recognized US state abbreviation")
         else:
             print(f"Loading state data for: {abbr} {fips}")
-
             load_state_data(abbr, fips)
 
-    os.chdir(cwd)
+    os.chdir(current_working_directory)

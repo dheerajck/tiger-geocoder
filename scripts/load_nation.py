@@ -24,8 +24,9 @@ BASE_URL = f"https://{BASE_PATH}"
 
 
 def load_national_data_caller():
+    current_working_directory = os.getcwd()
+
     # Download and extract state data
-    cwd = os.getcwd()
     os.chdir(GISDATA_FOLDER)
 
     state_url = f"{BASE_URL}/STATE/tl_{YEAR}_us_state.zip"
@@ -145,4 +146,4 @@ def load_national_data_caller():
 
     # Commit changes and close the connection
 
-    os.chdir(cwd)
+    os.chdir(current_working_directory)
