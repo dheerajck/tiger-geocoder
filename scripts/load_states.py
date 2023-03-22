@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from geocoder import Database
 
 from .helpers import clear_temp, download
-from .load_states_create_section_table_and_add_data import create_section_table_and_add_data
+from .load_states_common_sql import create_section_table_and_add_data
 
 
 load_dotenv(".env")
@@ -47,37 +47,24 @@ def get_fips_from_abbr(abbr):
 
 def get_fips_files(url, fips):
     """
-    get_fips_files () {
-    local url=$1
-    local fips=$2
-    local files=($(wget --no-verbose -O - $url \
-        | perl -nle 'print if m{(?=\"tl)(.*?)(?<=>)}g' \
-        | perl -nle 'print m{(?=\"tl)(.*?)(?<=>)}g' \
-        | sed -e 's/[\">]//g'))
-    local matched=($(echo "${files[*]}" | tr ' ' '\n' | grep "tl_${YEAR}_${fips}"))
-    echo "${matched[*]}"
-}
-
-    downloads the content from the specified URL using wget, and then uses Perl and sed commands to extract the file names from the HTML content. Specifically, the first Perl command extracts all substrings that are preceded by "tl and followed by >, and the second Perl command extracts the same substrings again. The sed command removes the "> characters from the extracted substrings. The resulting file names are stored as an array in the files variable.
-    local matched=($(echo "${files[*]}" | tr ' ' '\n' | grep "tl_${YEAR}_${fips}")) filters the file names by FIPS code and the year variable. It uses the echo command to output all the file names as a space-separated string, then replaces the spaces with newlines using tr, and finally uses grep to match file names that contain the specified FIPS code and year. The resulting file names are stored as an array in the matched variable.
-    echo "${matched[*]}" prints the matched file names as a space-separated string.
-
-    files = ['tl_2021_01_test1\">', 'tl_2021_02_test2\">']
-    final_files= ['tl_2021_01_test1', 'tl_2021_02_test2']
+    Helps to download the content from the specified URL using wget, and then uses Perl and sed commands to extract the file names from the HTML content
+    Specifically, the first Perl command extracts all substrings that are preceded by "tl and followed by >, and the second Perl command extracts the same substrings again
+    The sed command removes the "> characters from the extracted substrings
+    The resulting file names are stored as an array in the files variable
     """
 
     # import urllib.request
     # response = urllib.request.urlopen(url)
     # content = response.read().decode('utf-8')
 
-    # response = requests.get(url)
-    # content = response.text
+    response = requests.get(url)
+    content = response.text
 
-    temp = url.replace("/", "")
-    # with open(temp, "w") as f:
-    #     f.write(content)
-    with open(temp, "r") as f:
-        content = f.read()
+    # temp = url.replace("/", "")
+    # # with open(temp, "w") as f:
+    # #     f.write(content)
+    # with open(temp, "r") as f:
+    #     content = f.read()
 
     files = fips_files_matching_pattern.findall(content)
 
@@ -88,6 +75,7 @@ def get_fips_files(url, fips):
 
 
 def download_extract(fips, section):
+    current_working_directory = os.getcwd()
     os.chdir(GISDATA_FOLDER)
 
     current_url = f"{BASE_URL}/{section.upper()}/tl_{YEAR}_{fips}_{section}.zip"
@@ -101,55 +89,60 @@ def download_extract(fips, section):
             with zipfile.ZipFile(z) as place_zip:
                 place_zip.extractall(TEMP_DIR)
 
-    os.chdir(TEMP_DIR)
+    os.chdir(current_working_directory)
 
 
 def download_extract_urls_of_all_files(fips, section):
+    current_working_directory = os.getcwd()
     os.chdir(GISDATA_FOLDER)
+
     files = get_fips_files(f"{BASE_URL}/{section.upper()}", fips)
 
     for i in files:
         url = f"{BASE_URL}/{section.upper()}/{i}"
         download(url)
 
-    os.chdir(GISDATA_FOLDER / BASE_PATH / section.upper())
     clear_temp(TEMP_DIR)
-
+    os.chdir(GISDATA_FOLDER / BASE_PATH / section.upper())
     for z in os.listdir(os.getcwd()):
         if z.startswith(f"tl_{YEAR}_{fips}") and z.endswith(f"_{section}.zip"):
             with zipfile.ZipFile(z) as place_zip:
                 place_zip.extractall(TEMP_DIR)
 
-    os.chdir(TEMP_DIR)
+    os.chdir(current_working_directory)
 
 
 def load_state_data(abbr, fips):
     db = Database()
     abbr = abbr.lower()
 
-    # #############
+    # Everything inside this function require temp dir as working directory
+    # All functions thats called from this function that needs to change working directory change it at start and change back at end
+    os.chdir(TEMP_DIR)
+
+    ###############
     # Place
-    # #############
+    ###############
 
     section = "place"
     primary_key = "plcidfp"
 
-    print(section)
+    start_message = f"Started to setup {section}"
+    print(start_message, end="\r")
     download_extract(fips, section)
 
     create_section_table_and_add_data(section, abbr, fips, primary_key, YEAR)
 
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS idx_{abbr}_place_soundex_name ON tiger_data.{abbr}_place USING btree (soundex(name));"
+        f"CREATE INDEX IF NOT EXISTS idx_{abbr}_place_soundex_name ON tiger_data.{abbr}_place USING btree (soundex(name))"
     )
 
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_place_the_geom_gist ON tiger_data.{abbr}_place USING gist(the_geom);"
+        f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_place_the_geom_gist ON tiger_data.{abbr}_place USING gist(the_geom)"
     )
 
-    db.execute(f"ALTER TABLE tiger_data.{abbr}_place ADD CONSTRAINT chk_statefp CHECK (statefp = '{fips}');")
     db.connection.commit()
-    print("done")
+    print(f"{start_message} - Done\n")
 
     #############
     # Cousub
@@ -158,19 +151,23 @@ def load_state_data(abbr, fips):
     section = "cousub"
     primary_key = "cosbidfp"
 
-    print(section)
+    start_message = f"Started to setup {section}"
+    print(start_message, end="\r")
     download_extract(fips, section)
 
     create_section_table_and_add_data(section, abbr, fips, primary_key, YEAR)
 
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_cousub_the_geom_gist ON tiger_data.{abbr}_cousub USING gist(the_geom);"
+        f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_cousub_the_geom_gist ON tiger_data.{abbr}_cousub USING gist(the_geom)"
     )
+
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_cousub_countyfp ON tiger_data.{abbr}_cousub USING btree(countyfp);"
+        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_cousub_countyfp ON tiger_data.{abbr}_cousub USING btree(countyfp)"
     )
+
     db.connection.commit()
-    print("done")
+    print(f"{start_message} - Done\n")
+
     #############
     # Tract
     #############
@@ -178,28 +175,28 @@ def load_state_data(abbr, fips):
     section = "tract"
     primary_key = "tract_id"
 
-    print(section)
+    start_message = f"Started to setup {section}"
+    print(start_message, end="\r")
     download_extract(fips, section)
 
     create_section_table_and_add_data(section, abbr, fips, primary_key, YEAR)
 
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_tract_the_geom_gist ON tiger_data.{abbr}_tract USING gist(the_geom);"
+        f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_tract_the_geom_gist ON tiger_data.{abbr}_tract USING gist(the_geom)"
     )
+
     db.connection.commit()
-    print("done")
+    print(f"{start_message} - Done\n")
 
     #############
     # Faces
     #############
 
-    os.chdir(GISDATA_FOLDER)
-
-    os.chdir(TEMP_DIR)
     section = "faces"
     primary_key = "gid"
 
-    print(section)
+    start_message = f"Started to setup {section}"
+    print(start_message, end="\r")
     download_extract_urls_of_all_files(fips, section)
 
     dbf_files = []
@@ -211,29 +208,29 @@ def load_state_data(abbr, fips):
     create_section_table_and_add_data(section, abbr, fips, primary_key, YEAR, dbf_files)
 
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_faces_the_geom_gist ON tiger_data.{abbr}_faces USING gist(the_geom);"
+        f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_faces_the_geom_gist ON tiger_data.{abbr}_faces USING gist(the_geom)"
     )
+
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_faces_tfid ON tiger_data.{abbr}_faces USING btree (tfid);"
+        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_faces_tfid ON tiger_data.{abbr}_faces USING btree (tfid)"
     )
+
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_faces_countyfp ON tiger_data.{abbr}_faces USING btree (countyfp);"
+        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_faces_countyfp ON tiger_data.{abbr}_faces USING btree (countyfp)"
     )
 
     db.connection.commit()
-    print("done")
+    print(f"{start_message} - Done\n")
 
     #############
     # FeatNames
     #############
 
-    os.chdir(GISDATA_FOLDER)
-
-    os.chdir(TEMP_DIR)
     section = "featnames"
     primary_key = "gid"
 
-    print(section)
+    start_message = f"Started to setup {section}"
+    print(start_message, end="\r")
     download_extract_urls_of_all_files(fips, section)
 
     dbf_files = []
@@ -241,32 +238,33 @@ def load_state_data(abbr, fips):
     for z in os.listdir(os.getcwd()):
         if z.endswith(".dbf") and "featnames" in z:
             dbf_files.append(z)
+
     create_section_table_and_add_data(section, abbr, fips, primary_key, YEAR, dbf_files)
 
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_featnames_snd_name ON tiger_data.{abbr}_featnames USING btree (soundex(name));"
+        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_featnames_snd_name ON tiger_data.{abbr}_featnames USING btree (soundex(name))"
     )
+
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_featnames_lname ON tiger_data.{abbr}_featnames USING btree (lower(name));"
+        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_featnames_lname ON tiger_data.{abbr}_featnames USING btree (lower(name))"
     )
+
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_featnames_tlid_statefp ON tiger_data.{abbr}_featnames USING btree (tlid,statefp);"
+        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_featnames_tlid_statefp ON tiger_data.{abbr}_featnames USING btree (tlid,statefp)"
     )
 
     db.connection.commit()
-    print("done")
+    print(f"{start_message} - Done\n")
 
     #############
     # Edges
     #############
 
-    os.chdir(GISDATA_FOLDER)
-
-    os.chdir(TEMP_DIR)
     section = "edges"
     primary_key = "gid"
 
-    print(section)
+    start_message = f"Started to setup {section}"
+    print(start_message, end="\r")
     download_extract_urls_of_all_files(fips, section)
 
     dbf_files = []
@@ -278,38 +276,41 @@ def load_state_data(abbr, fips):
     create_section_table_and_add_data(section, abbr, fips, primary_key, YEAR, dbf_files)
 
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edges_tlid ON tiger_data.{abbr}_edges USING btree (tlid);"
+        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edges_tlid ON tiger_data.{abbr}_edges USING btree (tlid)"
     )
+
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edgestfidr ON tiger_data.{abbr}_edges USING btree (tfidr);"
+        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edgestfidr ON tiger_data.{abbr}_edges USING btree (tfidr)"
     )
+
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edges_tfidl ON tiger_data.{abbr}_edges USING btree (tfidl);"
+        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edges_tfidl ON tiger_data.{abbr}_edges USING btree (tfidl)"
     )
+
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edges_countyfp ON tiger_data.{abbr}_edges USING btree (countyfp);"
+        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edges_countyfp ON tiger_data.{abbr}_edges USING btree (countyfp)"
     )
+
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_edges_the_geom_gist ON tiger_data.{abbr}_edges USING gist(the_geom);"
+        f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_edges_the_geom_gist ON tiger_data.{abbr}_edges USING gist(the_geom)"
     )
+
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edges_zipl ON tiger_data.{abbr}_edges USING btree (zipl);"
+        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edges_zipl ON tiger_data.{abbr}_edges USING btree (zipl)"
     )
 
     db.connection.commit()
-    print("done")
+    print(f"{start_message} - Done\n")
 
     #############
     # Addr
     #############
 
-    os.chdir(GISDATA_FOLDER)
-
-    os.chdir(TEMP_DIR)
     section = "addr"
     primary_key = "gid"
 
-    print(section)
+    start_message = f"Started to setup {section}"
+    print(start_message, end="\r")
     download_extract_urls_of_all_files(fips, section)
 
     dbf_files = []
@@ -321,63 +322,59 @@ def load_state_data(abbr, fips):
     create_section_table_and_add_data(section, abbr, fips, primary_key, YEAR, dbf_files)
 
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_addr_least_address ON tiger_data.{abbr}_addr USING btree (least_hn(fromhn,tohn) );"
-    )
-    db.execute(
-        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_addr_tlid_statefp ON tiger_data.{abbr}_addr USING btree (tlid, statefp);"
-    )
-    db.execute(
-        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_addr_zip ON tiger_data.{abbr}_addr USING btree (zip);"
+        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_addr_least_address ON tiger_data.{abbr}_addr USING btree (least_hn(fromhn,tohn) )"
     )
 
+    db.execute(
+        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_addr_tlid_statefp ON tiger_data.{abbr}_addr USING btree (tlid, statefp)"
+    )
+
+    db.execute(f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_addr_zip ON tiger_data.{abbr}_addr USING btree (zip)")
+
     db.connection.commit()
-    print("done")
+    print(f"{start_message} - Done\n")
 
     # #############
     # # Tabblock
     # #############
 
-    os.chdir(GISDATA_FOLDER)
-
     # url = f"{BASE_URL}/TABBLOCK/tl_{YEAR}_{fips}_tabblock10.zip"
     # url = f"{BASE_URL}/TABBLOCK20/tl_{YEAR}_{fips}_tabblock20.zip"
 
-    os.chdir(TEMP_DIR)
     section = "tabblock20"
     primary_key = "geoid"
 
-    print(section)
+    start_message = f"Started to setup {section}"
+    print(start_message, end="\r")
     download_extract(fips, section)
 
     create_section_table_and_add_data(section, abbr, fips, primary_key, YEAR)
 
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_tabblock20_the_geom_gist ON tiger_data.{abbr}_tabblock20 USING gist(the_geom);"
+        f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_tabblock20_the_geom_gist ON tiger_data.{abbr}_tabblock20 USING gist(the_geom)"
     )
 
     db.connection.commit()
-    print("done")
+    print(f"{start_message} - Done\n")
 
     #############
     # Block Group
     #############
 
-    os.chdir(GISDATA_FOLDER)
-
-    os.chdir(TEMP_DIR)
     section = "bg"
     primary_key = "bg_id"
 
-    print(section)
+    start_message = f"Started to setup {section}"
+    print(start_message, end="\r")
     download_extract(fips, section)
     create_section_table_and_add_data(section, abbr, fips, primary_key, YEAR)
 
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_bg_the_geom_gist ON tiger_data.{abbr}_bg USING gist(the_geom);"
+        f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_bg_the_geom_gist ON tiger_data.{abbr}_bg USING gist(the_geom)"
     )
 
     db.connection.commit()
-    print("done")
+    print(f"{start_message} - Done\n")
 
 
 def load_zip_tables_data(abbr, fips):
@@ -388,49 +385,90 @@ def load_zip_tables_data(abbr, fips):
     # Zip state loc Edges
     ########################
 
-    db.execute(
-        f"CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_zip_state_loc(CONSTRAINT pk_{abbr}_zip_state_loc PRIMARY KEY(zip,stusps,place)) INHERITS(tiger.zip_state_loc);"
-    )
-    db.execute(f"ALTER TABLE tiger_data.{abbr}_zip_state_loc ADD CONSTRAINT chk_statefp CHECK (statefp = '{fips}');")
-    db.execute(
-        f"INSERT INTO tiger_data.{abbr}_zip_state_loc(zip,stusps,statefp,place) SELECT DISTINCT e.zipl, '{abbr}', '{fips}', p.name FROM tiger_data.{abbr}_edges AS e INNER JOIN tiger_data.{abbr}_faces AS f ON (e.tfidl = f.tfid OR e.tfidr = f.tfid) INNER JOIN tiger_data.{abbr}_place As p ON(f.statefp = p.statefp AND f.placefp = p.placefp ) WHERE e.zipl IS NOT NULL;"
-    )
-    db.execute(f"vacuum analyze tiger_data.{abbr}_zip_state_loc;")
+    start_message = "Started to setup zip state loc edges"
+    print(start_message, end="\r")
 
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_zip_state_loc_place ON tiger_data.{abbr}_zip_state_loc USING btree(soundex(place));"
+        f"""
+        CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_zip_state_loc(
+            CONSTRAINT pk_{abbr}_zip_state_loc PRIMARY KEY(zip, stusps, place)
+            ) INHERITS (tiger.zip_state_loc)
+        """
     )
+
+    db.execute(f"ALTER TABLE tiger_data.{abbr}_zip_state_loc ADD CONSTRAINT chk_statefp CHECK (statefp = '{fips}')")
+
+    db.execute(
+        f"""
+        INSERT INTO tiger_data.{abbr}_zip_state_loc(zip,stusps,statefp,place) 
+        SELECT DISTINCT e.zipl, '{abbr}', '{fips}', p.name FROM tiger_data.{abbr}_edges AS e 
+        INNER JOIN tiger_data.{abbr}_faces AS f ON (e.tfidl = f.tfid OR e.tfidr = f.tfid) 
+        INNER JOIN tiger_data.{abbr}_place As p ON(f.statefp = p.statefp AND f.placefp = p.placefp ) WHERE e.zipl IS NOT NULL
+        """
+    )
+
+    db.execute(f"vacuum analyze tiger_data.{abbr}_zip_state_loc")
+
+    db.execute(
+        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_zip_state_loc_place ON tiger_data.{abbr}_zip_state_loc USING btree(soundex(place))"
+    )
+
+    print(f"{start_message} - Done\n")
 
     ########################
     # Zip lookup base Edges
     ########################
 
+    start_message = "Started to setup zip lookup base edges"
+    print(start_message, end="\r")
+
     db.execute(
-        f"CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_zip_lookup_base(CONSTRAINT pk_{abbr}_zip_state_loc_city PRIMARY KEY(zip,state, county, city, statefp)) INHERITS(tiger.zip_lookup_base);"
+        f"""
+        CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_zip_lookup_base(
+            CONSTRAINT pk_{abbr}_zip_state_loc_city PRIMARY KEY(zip, state, county, city, statefp)
+            ) INHERITS(tiger.zip_lookup_base)
+        """
     )
-    db.execute(f"ALTER TABLE tiger_data.{abbr}_zip_lookup_base ADD CONSTRAINT chk_statefp CHECK (statefp = '{fips}');")
+    db.execute(f"ALTER TABLE tiger_data.{abbr}_zip_lookup_base ADD CONSTRAINT chk_statefp CHECK (statefp = '{fips}')")
+
     db.execute(
-        f"INSERT INTO tiger_data.{abbr}_zip_lookup_base(zip,state,county,city, statefp) SELECT DISTINCT e.zipl, '{abbr}', c.name,p.name,'{fips}'  FROM tiger_data.{abbr}_edges AS e INNER JOIN tiger.county As c  ON (e.countyfp = c.countyfp AND e.statefp = c.statefp AND e.statefp = '{fips}') INNER JOIN tiger_data.{abbr}_faces AS f ON (e.tfidl = f.tfid OR e.tfidr = f.tfid) INNER JOIN tiger_data.{abbr}_place As p ON(f.statefp = p.statefp AND f.placefp = p.placefp ) WHERE e.zipl IS NOT NULL;"
+        f"""
+        INSERT INTO tiger_data.{abbr}_zip_lookup_base(zip,state,county,city, statefp) 
+        SELECT DISTINCT e.zipl, '{abbr}', c.name,p.name,'{fips}'  FROM tiger_data.{abbr}_edges AS e 
+        INNER JOIN tiger.county As c  ON (e.countyfp = c.countyfp AND e.statefp = c.statefp AND e.statefp = '{fips}') 
+        INNER JOIN tiger_data.{abbr}_faces AS f ON (e.tfidl = f.tfid OR e.tfidr = f.tfid) 
+        INNER JOIN tiger_data.{abbr}_place As p ON(f.statefp = p.statefp AND f.placefp = p.placefp ) WHERE e.zipl IS NOT NULL
+        """
     )
 
     db.execute(
-        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_zip_lookup_base_citysnd ON tiger_data.{abbr}_zip_lookup_base USING btree(soundex(city));"
+        f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_zip_lookup_base_citysnd ON tiger_data.{abbr}_zip_lookup_base USING btree(soundex(city))"
     )
+
+    print(f"{start_message} - Done\n")
 
     ########################
     # Zip state Addr
     ########################
 
+    start_message = "Started to setup zip state addr"
+    print(start_message, end="\r")
+
     db.execute(
-        f"CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_zip_state(CONSTRAINT pk_{abbr}_zip_state PRIMARY KEY(zip,stusps)) INHERITS(tiger.zip_state); "
+        f"""
+        CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_zip_state(
+            CONSTRAINT pk_{abbr}_zip_state PRIMARY KEY(zip, stusps)
+            ) INHERITS(tiger.zip_state)
+        """
     )
-    db.execute(f"ALTER TABLE tiger_data.{abbr}_zip_state ADD CONSTRAINT chk_statefp CHECK (statefp = '{fips}');")
+    db.execute(f"ALTER TABLE tiger_data.{abbr}_zip_state ADD CONSTRAINT chk_statefp CHECK (statefp = '{fips}')")
+
     db.execute(
-        f"INSERT INTO tiger_data.{abbr}_zip_state(zip,stusps,statefp) SELECT DISTINCT zip, '{abbr}', '{fips}' FROM tiger_data.{abbr}_addr WHERE zip is not null;"
+        f"INSERT INTO tiger_data.{abbr}_zip_state(zip,stusps,statefp) SELECT DISTINCT zip, '{abbr}', '{fips}' FROM tiger_data.{abbr}_addr WHERE zip is not null"
     )
 
     db.connection.commit()
-    print("done")
+    print(f"{start_message} - Done\n")
 
 
 def load_states_data_caller():
@@ -448,9 +486,10 @@ def load_states_data_caller():
         fips = get_fips_from_abbr(abbr)
 
         if fips == 0:
-            print(f"Error: f{abbr} is not a recognized US state abbreviation")
+            print(f"\nError: f{abbr} is not a recognized US state abbreviation")
+            exit()
         else:
-            print(f"Loading state data for: {abbr} {fips}")
+            print(f"\nLoading state data for: {abbr} {fips}")
             load_state_data(abbr, fips)
             load_zip_tables_data(abbr, fips)
 
