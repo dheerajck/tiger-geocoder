@@ -1,17 +1,15 @@
+import json
 import os
+import re
 import zipfile
 from pathlib import Path
 
+import requests
+from dotenv import load_dotenv
 from geocoder import Database
 
-from dotenv import load_dotenv
-
 from .helpers import clear_temp, download
-
 from .load_states_common_sql import common_sql
-
-import json
-
 
 with open('scripts/abbr - fips.json') as f:
     ABBR_FIPS = json.load(f)
@@ -31,9 +29,11 @@ TEMP_DIR = Path(f"{GISDATA_FOLDER}/temp/")
 YEAR = "2022"
 BASE_PATH = f"www2.census.gov/geo/tiger/TIGER{YEAR}"
 BASE_URL = f"https://{BASE_PATH}"
-
-
 SHP2PGSQL = "shp2pgsql"
+
+
+fips_files_matching_pattern = re.compile('(?=\"tl)(.*?)(?<=>)')
+find_slash_double_quote_greter_than_pattern = re.compile('[\">]')
 
 
 def get_fips_from_abbr(abbr):
@@ -63,27 +63,25 @@ def get_fips_files(url, fips):
     
 
     """
-    import re
-    import urllib.request
 
+    # import urllib.request
     # response = urllib.request.urlopen(url)
     # content = response.read().decode('utf-8')
+
+    response = requests.get(url)
+    content = response.text
 
     temp = url.replace("/", "")
     # with open(temp, "w") as f:
     #     f.write(content)
-    with open(temp, "r") as f:
-        content = f.read()
+    # with open(temp, "r") as f:
+    #     content = f.read()
 
-    with open(url.replace("/", "")) as f:
-        content = f.read()
-    pattern = '(?=\"tl)(.*?)(?<=>)'
+    files = fips_files_matching_pattern.findall(content)
 
-    files = re.findall(pattern, content)
-
-    files = [re.sub('[\">]', '', file) for file in files]
+    files = [find_slash_double_quote_greter_than_pattern.sub('', file) for file in files]
     matched = [file for file in files if f"tl_{YEAR}_{fips}" in file]
-    print(matched)
+
     return matched
 
 
