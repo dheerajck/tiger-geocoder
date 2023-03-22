@@ -1,6 +1,5 @@
 import os
 from enum import Enum
-from pprint import pprint
 
 import psycopg
 from dotenv import load_dotenv
@@ -39,14 +38,11 @@ class Database:
                 cursor.execute(query, parameters)
                 # return cursor.fetchall()
             except psycopg.errors.UniqueViolation as e:
-                print(query, e)
+                pass
             except psycopg.errors.DuplicateTable as e:
-                print(query, e)
+                pass
             except psycopg.errors.DuplicateObject as e:
-                print(query, e)
-            except psycopg.errors.UndefinedColumn as e:
-                print(query, e)
-
+                pass
             except psycopg.Error as e:
                 print(query)
                 raise e
@@ -70,9 +66,11 @@ class Database:
                 "SELECT addy, ST_Y(geomout) As lat, ST_X(geomout) As lon, rating FROM geocode(%s)", [address]
             )
             result = cursor.fetchone()
+
         except psycopg.Error as e:
-            pprint(e)
-            return None
+            raise e
+            # return None
+
         finally:
             cursor.close()
 
