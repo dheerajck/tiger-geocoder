@@ -68,8 +68,13 @@ def get_fips_files(url, fips):
 
     # response = urllib.request.urlopen(url)
     # content = response.read().decode('utf-8')
-    # with open(url.replace("/", ""), "w") as f:
+
+    temp = url.replace("/", "")
+    # with open(temp, "w") as f:
     #     f.write(content)
+    with open(temp, "r") as f:
+        content = f.read()
+
     with open(url.replace("/", "")) as f:
         content = f.read()
     pattern = '(?=\"tl)(.*?)(?<=>)'
