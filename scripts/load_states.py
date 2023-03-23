@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from geocoder import Database
 
 from .common_sql import create_state_section_table_and_add_data
-from .helpers import clear_temp, download
+from .helpers import clear_temp, download, download_extract
 
 
 load_dotenv(".env")
@@ -31,7 +31,7 @@ ABBR_FIPS = json.load(open('scripts/abbr - fips.json'))
 
 # match substrings that starts with "tl and ends with > in a string
 REGEX_tl_filename_pattern = re.compile('(?=\"tl)(.*?)(?<=>)')
-# match  \ " > in a string
+# match \ " > in a string
 # find_slash_double_quote_greater_than_pattern
 REGEX_specific_character_pattern = re.compile('[\">]')
 
@@ -43,15 +43,11 @@ def get_fips_from_abbr(abbr):
 
 def get_fips_files(url, fips):
     """
-    Helps to download the content from the specified URL using wget, and then uses Perl and sed commands to extract the file names from the HTML content
-    Specifically, the first Perl command extracts all substrings that are preceded by "tl and followed by >, and the second Perl command extracts the same substrings again
-    The sed command removes the "> characters from the extracted substrings
+    Helps to download the content from the specified URL and then uses regex to extract the file names from the HTML content
+    Specifically, the first regex command extracts all substrings that are preceded by "tl and followed by >
+    second regex removes the \"> characters from the extracted substrings
     The resulting file names are stored as an array in the files variable
     """
-
-    # import urllib.request
-    # response = urllib.request.urlopen(url)
-    # content = response.read().decode('utf-8')
 
     response = requests.get(url)
     content = response.text
@@ -68,14 +64,6 @@ def get_fips_files(url, fips):
     matched = [file for file in files if f"tl_{YEAR}_{fips}" in file]
 
     return matched
-
-
-def download_extract(section, fips):
-    current_url = f"{BASE_URL}/{section.upper()}/tl_{YEAR}_{fips}_{section}.zip"
-    clear_temp(TEMP_DIR)
-    downloaded_file_full_path = download(current_url)
-    with zipfile.ZipFile(downloaded_file_full_path) as current_file:
-        current_file.extractall(TEMP_DIR)
 
 
 def download_extract_urls_of_all_files(section, fips):

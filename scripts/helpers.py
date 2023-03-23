@@ -17,6 +17,10 @@ YEAR = os.getenv("YEAR")
 
 GISDATA_FOLDER = os.getenv("GISDATA_FOLDER")
 GISDATA_FOLDER = Path(GISDATA_FOLDER)
+TEMP_DIR = GISDATA_FOLDER / "temp"
+
+BASE_PATH = f"www2.census.gov/geo/tiger/TIGER{YEAR}"
+BASE_URL = f"https://{BASE_PATH}"
 
 
 def round_number_to_x(number, x):
@@ -98,3 +102,12 @@ def clear_temp(temp_dir):
             # shouldnt execute as there will be no folders inside temp
             raise Exception("shouldnt execute as there will be no folders inside temp")
             shutil.rmtree(child)
+
+
+def download_extract(section, country_code_or_fips_number):
+    # country code will always be us as tiger is just for us
+    current_url = f"{BASE_URL}/{section.upper()}/tl_{YEAR}_{country_code_or_fips_number}_{section}.zip"
+    clear_temp(TEMP_DIR)
+    downloaded_file_full_path = download(current_url)
+    with zipfile.ZipFile(downloaded_file_full_path) as current_file:
+        current_file.extractall(TEMP_DIR)

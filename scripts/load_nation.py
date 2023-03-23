@@ -1,12 +1,11 @@
 import os
-import zipfile
 from pathlib import Path
 
 from dotenv import load_dotenv
 from geocoder import Database
 
 from .common_sql import reset_schema
-from .helpers import clear_temp, download, run_shp2pgsql
+from .helpers import download_extract, run_shp2pgsql
 
 
 load_dotenv(".env")
@@ -21,14 +20,6 @@ TEMP_DIR = GISDATA_FOLDER / "temp"
 
 BASE_PATH = f"www2.census.gov/geo/tiger/TIGER{YEAR}"
 BASE_URL = f"https://{BASE_PATH}"
-
-
-def download_extract(section, country):
-    current_url = f"{BASE_URL}/{section.upper()}/tl_{YEAR}_{country}_{section}.zip"
-    clear_temp(TEMP_DIR)
-    downloaded_file_full_path = download(current_url)
-    with zipfile.ZipFile(downloaded_file_full_path) as current_file:
-        current_file.extractall(TEMP_DIR)
 
 
 def load_national_data():
