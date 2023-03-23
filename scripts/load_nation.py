@@ -1,11 +1,10 @@
 import os
-import zipfile
 from pathlib import Path
 
 from dotenv import load_dotenv
 from geocoder import Database
 
-from .helpers import clear_temp, download, run_shp2pgsql
+from .helpers import clear_temp, download, run_shp2pgsql, extract_folders_of_given_section
 
 from .common_sql import reset_schema
 
@@ -24,19 +23,14 @@ BASE_PATH = f"www2.census.gov/geo/tiger/TIGER{YEAR}"
 BASE_URL = f"https://{BASE_PATH}"
 
 
-def download_extract(country, section):
+def download_extract(section, country):
     current_working_directory = os.getcwd()
 
     current_url = f"{BASE_URL}/{section.upper()}/tl_{YEAR}_{country}_{section}.zip"
 
     download(current_url)
     clear_temp(TEMP_DIR)
-
-    os.chdir(GISDATA_FOLDER / BASE_PATH / section.upper())
-    for z in os.listdir(os.getcwd()):
-        if z.startswith(f"tl_{YEAR}_{country}") and z.endswith(f"_{section}.zip"):
-            with zipfile.ZipFile(z) as current_file:
-                current_file.extractall(TEMP_DIR)
+    extract_folders_of_given_section(section, country, TEMP_DIR)
 
     os.chdir(current_working_directory)
 
@@ -57,7 +51,7 @@ def load_national_data():
 
     start_message = f"Started to setup {section}"
     print(start_message)
-    download_extract(country, section)
+    download_extract(section, country)
 
     reset_schema(db)
 
@@ -92,7 +86,7 @@ def load_national_data():
 
     start_message = f"Started to setup {section}"
     print(start_message)
-    download_extract(country, section)
+    download_extract(section, country)
 
     reset_schema(db)
 

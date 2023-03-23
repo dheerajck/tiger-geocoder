@@ -1,14 +1,13 @@
 import json
 import os
 import re
-import zipfile
 from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
 from geocoder import Database
 
-from .helpers import clear_temp, download
+from .helpers import clear_temp, download, extract_folders_of_given_section
 from .common_sql import create_state_section_table_and_add_data
 
 
@@ -70,39 +69,32 @@ def get_fips_files(url, fips):
     return matched
 
 
-def download_extract(fips, section):
+def download_extract(section, fips):
     current_working_directory = os.getcwd()
 
     current_url = f"{BASE_URL}/{section.upper()}/tl_{YEAR}_{fips}_{section}.zip"
 
     download(current_url)
     clear_temp(TEMP_DIR)
-
-    os.chdir(GISDATA_FOLDER / BASE_PATH / section.upper())
-    for z in os.listdir(os.getcwd()):
-        if z.startswith(f"tl_{YEAR}_{fips}") and z.endswith(f"_{section}.zip"):
-            with zipfile.ZipFile(z) as current_file:
-                current_file.extractall(TEMP_DIR)
+    extract_folders_of_given_section(section, fips, TEMP_DIR)
 
     os.chdir(current_working_directory)
 
 
-def download_extract_urls_of_all_files(fips, section):
+def download_extract_urls_of_all_files(section, fips):
     current_working_directory = os.getcwd()
 
-    files = get_fips_files(f"{BASE_URL}/{section.upper()}", fips)
+    current_url = f"{BASE_URL}/{section.upper()}"
+    files = get_fips_files(current_url, fips)
 
     for i in files:
-        url = f"{BASE_URL}/{section.upper()}/{i}"
-        download(url)
+        # files are downloaded to f"{BASE_PATH}/{section.upper()}/{i}"
+        # that is same as f"{BASE_URL}/{section.upper()}/{i}".lstrip("https://")
+        current_file_url = f"{BASE_URL}/{section.upper()}/{i}"
+        download(current_file_url)
 
     clear_temp(TEMP_DIR)
-
-    os.chdir(GISDATA_FOLDER / BASE_PATH / section.upper())
-    for z in os.listdir(os.getcwd()):
-        if z.startswith(f"tl_{YEAR}_{fips}") and z.endswith(f"_{section}.zip"):
-            with zipfile.ZipFile(z) as current_file:
-                current_file.extractall(TEMP_DIR)
+    extract_folders_of_given_section(section, fips, TEMP_DIR)
 
     os.chdir(current_working_directory)
 
@@ -125,7 +117,7 @@ def load_state_data(abbr, fips):
     start_message = f"Started to setup {section}"
     print(start_message)
 
-    download_extract(fips, section)
+    download_extract(section, fips)
     create_state_section_table_and_add_data(section, abbr, fips, primary_key, YEAR)
 
     db.execute(f"CREATE INDEX IF NOT EXISTS idx_{abbr}_place_soundex_name ON tiger_data.{abbr}_place USING btree (soundex(name))")
@@ -144,7 +136,7 @@ def load_state_data(abbr, fips):
     start_message = f"Started to setup {section}"
     print(start_message)
 
-    download_extract(fips, section)
+    download_extract(section, fips)
     create_state_section_table_and_add_data(section, abbr, fips, primary_key, YEAR)
 
     db.execute(f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_cousub_the_geom_gist ON tiger_data.{abbr}_cousub USING gist(the_geom)")
@@ -163,7 +155,7 @@ def load_state_data(abbr, fips):
     start_message = f"Started to setup {section}"
     print(start_message)
 
-    download_extract(fips, section)
+    download_extract(section, fips)
     create_state_section_table_and_add_data(section, abbr, fips, primary_key, YEAR)
 
     db.execute(f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_tract_the_geom_gist ON tiger_data.{abbr}_tract USING gist(the_geom)")
@@ -180,7 +172,7 @@ def load_state_data(abbr, fips):
     start_message = f"Started to setup {section}"
     print(start_message)
 
-    download_extract_urls_of_all_files(fips, section)
+    download_extract_urls_of_all_files(section, fips)
 
     dbf_files = []
     # finding all files with specific type of name in temp folder
@@ -208,7 +200,7 @@ def load_state_data(abbr, fips):
     start_message = f"Started to setup {section}"
     print(start_message)
 
-    download_extract_urls_of_all_files(fips, section)
+    download_extract_urls_of_all_files(section, fips)
 
     dbf_files = []
 
@@ -236,7 +228,7 @@ def load_state_data(abbr, fips):
     start_message = f"Started to setup {section}"
     print(start_message)
 
-    download_extract_urls_of_all_files(fips, section)
+    download_extract_urls_of_all_files(section, fips)
 
     dbf_files = []
 
@@ -270,7 +262,7 @@ def load_state_data(abbr, fips):
     start_message = f"Started to setup {section}"
     print(start_message)
 
-    download_extract_urls_of_all_files(fips, section)
+    download_extract_urls_of_all_files(section, fips)
 
     dbf_files = []
 
@@ -301,7 +293,7 @@ def load_state_data(abbr, fips):
     start_message = f"Started to setup {section}"
     print(start_message)
 
-    download_extract(fips, section)
+    download_extract(section, fips)
     create_state_section_table_and_add_data(section, abbr, fips, primary_key, YEAR)
 
     db.execute(f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_tabblock20_the_geom_gist ON tiger_data.{abbr}_tabblock20 USING gist(the_geom)")
@@ -318,7 +310,7 @@ def load_state_data(abbr, fips):
     start_message = f"Started to setup {section}"
     print(start_message)
 
-    download_extract(fips, section)
+    download_extract(section, fips)
     create_state_section_table_and_add_data(section, abbr, fips, primary_key, YEAR)
 
     db.execute(f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_bg_the_geom_gist ON tiger_data.{abbr}_bg USING gist(the_geom)")
