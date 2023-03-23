@@ -16,28 +16,25 @@ load_dotenv(".env")
 
 DB_USER = os.getenv("DB_USER")
 DB_NAME = os.getenv("DB_NAME")
-
+YEAR = os.getenv("YEAR")
 GISDATA_FOLDER = os.getenv("GISDATA_FOLDER")
 GEOCODER_STATES = os.getenv("GEOCODER_STATES")
-YEAR = os.getenv("YEAR")
+PSQL = os.getenv("PSQL")
+SHP2PGSQL = os.getenv("SHP2PGSQL")
 
-# PSQL = os.getenv("PSQL")
-# SHP2PGSQL = os.getenv("SHP2PGSQL")
-
-
+# Define paths
 GISDATA_FOLDER = Path(GISDATA_FOLDER)
 TEMP_DIR = Path(f"{GISDATA_FOLDER}/temp/")
-
 BASE_PATH = f"www2.census.gov/geo/tiger/TIGER{YEAR}"
 BASE_URL = f"https://{BASE_PATH}"
 
+ABBR_FIPS = json.load(open('scripts/abbr - fips.json'))
 
-with open('scripts/abbr - fips.json') as f:
-    ABBR_FIPS = json.load(f)
-
-
-fips_files_matching_pattern = re.compile('(?=\"tl)(.*?)(?<=>)')
-find_slash_double_quote_greter_than_pattern = re.compile('[\">]')
+# match substrings that starts with "tl and ends with > in a string
+REGEX_tl_filename_pattern = re.compile('(?=\"tl)(.*?)(?<=>)')
+# match  \ " > in a string
+# find_slash_double_quote_greater_than_pattern
+REGEX_specific_character_pattern = re.compile('[\">]')
 
 
 def get_fips_from_abbr(abbr):
@@ -66,9 +63,9 @@ def get_fips_files(url, fips):
     # with open(temp, "r") as f:
     #     content = f.read()
 
-    files = fips_files_matching_pattern.findall(content)
+    files = REGEX_tl_filename_pattern.findall(content)
 
-    files = [find_slash_double_quote_greter_than_pattern.sub('', file) for file in files]
+    files = [REGEX_specific_character_pattern.sub('', file) for file in files]
     matched = [file for file in files if f"tl_{YEAR}_{fips}" in file]
 
     return matched
@@ -128,7 +125,7 @@ def load_state_data(abbr, fips):
     primary_key = "plcidfp"
 
     start_message = f"Started to setup {section}"
-    print(start_message, end="\r")
+    print(start_message)
     download_extract(fips, section)
 
     create_section_table_and_add_data(section, abbr, fips, primary_key, YEAR)
@@ -152,7 +149,7 @@ def load_state_data(abbr, fips):
     primary_key = "cosbidfp"
 
     start_message = f"Started to setup {section}"
-    print(start_message, end="\r")
+    print(start_message)
     download_extract(fips, section)
 
     create_section_table_and_add_data(section, abbr, fips, primary_key, YEAR)
@@ -176,7 +173,7 @@ def load_state_data(abbr, fips):
     primary_key = "tract_id"
 
     start_message = f"Started to setup {section}"
-    print(start_message, end="\r")
+    print(start_message)
     download_extract(fips, section)
 
     create_section_table_and_add_data(section, abbr, fips, primary_key, YEAR)
@@ -196,7 +193,7 @@ def load_state_data(abbr, fips):
     primary_key = "gid"
 
     start_message = f"Started to setup {section}"
-    print(start_message, end="\r")
+    print(start_message)
     download_extract_urls_of_all_files(fips, section)
 
     dbf_files = []
@@ -230,7 +227,7 @@ def load_state_data(abbr, fips):
     primary_key = "gid"
 
     start_message = f"Started to setup {section}"
-    print(start_message, end="\r")
+    print(start_message)
     download_extract_urls_of_all_files(fips, section)
 
     dbf_files = []
@@ -264,7 +261,7 @@ def load_state_data(abbr, fips):
     primary_key = "gid"
 
     start_message = f"Started to setup {section}"
-    print(start_message, end="\r")
+    print(start_message)
     download_extract_urls_of_all_files(fips, section)
 
     dbf_files = []
@@ -310,7 +307,7 @@ def load_state_data(abbr, fips):
     primary_key = "gid"
 
     start_message = f"Started to setup {section}"
-    print(start_message, end="\r")
+    print(start_message)
     download_extract_urls_of_all_files(fips, section)
 
     dbf_files = []
@@ -345,7 +342,7 @@ def load_state_data(abbr, fips):
     primary_key = "geoid"
 
     start_message = f"Started to setup {section}"
-    print(start_message, end="\r")
+    print(start_message)
     download_extract(fips, section)
 
     create_section_table_and_add_data(section, abbr, fips, primary_key, YEAR)
@@ -365,7 +362,7 @@ def load_state_data(abbr, fips):
     primary_key = "bg_id"
 
     start_message = f"Started to setup {section}"
-    print(start_message, end="\r")
+    print(start_message)
     download_extract(fips, section)
     create_section_table_and_add_data(section, abbr, fips, primary_key, YEAR)
 
@@ -386,8 +383,7 @@ def load_zip_tables_data(abbr, fips):
     ########################
 
     start_message = "Started to setup zip state loc edges"
-    print(start_message, end="\r")
-
+    print(start_message)
     db.execute(
         f"""
         CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_zip_state_loc(
@@ -420,8 +416,7 @@ def load_zip_tables_data(abbr, fips):
     ########################
 
     start_message = "Started to setup zip lookup base edges"
-    print(start_message, end="\r")
-
+    print(start_message)
     db.execute(
         f"""
         CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_zip_lookup_base(
@@ -452,8 +447,7 @@ def load_zip_tables_data(abbr, fips):
     ########################
 
     start_message = "Started to setup zip state addr"
-    print(start_message, end="\r")
-
+    print(start_message)
     db.execute(
         f"""
         CREATE TABLE IF NOT EXISTS tiger_data.{abbr}_zip_state(
@@ -473,24 +467,28 @@ def load_zip_tables_data(abbr, fips):
 
 def load_states_data_caller():
     current_working_directory = os.getcwd()
+
     if GEOCODER_STATES == "*":
-        print("'*' detected for STATES parameter. Adding data for all US states...")
+        print("\n'*' detected for STATES parameter. Adding data for all US states...")
         GEOCODER_STATES_LIST = list(ABBR_FIPS.keys())
     else:
         GEOCODER_STATES_LIST = GEOCODER_STATES.split(",")
 
-    print(f"Adding US states data for {GEOCODER_STATES_LIST}")
+    print(f"\nAdding US states data for {GEOCODER_STATES_LIST}")
+
+    print("-------------------------------------------------")
+    print()
 
     for state in GEOCODER_STATES_LIST:
         abbr = state
         fips = get_fips_from_abbr(abbr)
 
         if fips == 0:
-            print(f"\nError: f{abbr} is not a recognized US state abbreviation")
-            exit()
+            print(f"Error: f{abbr} is not a recognized US state abbreviation\n")
         else:
-            print(f"\nLoading state data for: {abbr} {fips}")
+            print(f"Loading state data for: {abbr} {fips}\n")
             load_state_data(abbr, fips)
             load_zip_tables_data(abbr, fips)
 
+    print("-------------------------------------------------")
     os.chdir(current_working_directory)

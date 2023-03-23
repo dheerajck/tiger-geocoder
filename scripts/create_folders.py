@@ -10,6 +10,8 @@ GISDATA_FOLDER = Path(GISDATA_FOLDER)
 
 
 def create_folders():
+    print("\nCreating Folders")
+
     GISDATA_FOLDER.mkdir(parents=True, exist_ok=True)
     TEMP_DIR = GISDATA_FOLDER / "temp"
     TEMP_DIR.mkdir(parents=True, exist_ok=True)

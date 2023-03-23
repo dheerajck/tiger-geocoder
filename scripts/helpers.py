@@ -13,21 +13,30 @@ DB_USER = os.getenv("DB_USER")
 DB_NAME = os.getenv("DB_NAME")
 
 
+def round_number_to_x(number, x):
+    return x * round(number / x)
+
+
 def run_shp2pgsql(command):
     new_command = f"{command} | psql -U {DB_USER} -d {DB_NAME}"
     shp2pgsql_output = subprocess.run(new_command, shell=True, capture_output=True, text=True)
 
 
 def download(url):
-    response = requests.get(url, stream=True)
-    total = int(response.headers.get('content-length', 0))
-    if total == 0:
-        print("total size is not in content-length")
-
+    start_message = "Started downloading"
     zip_file_path = Path(url.lstrip("https://"))
+
+    start_message = f"{start_message} - {zip_file_path}"
+    print(start_message, end="\r")
 
     parent = zip_file_path.resolve().parent
     parent.mkdir(parents=True, exist_ok=True)
+
+    response = requests.get(url, stream=True)
+
+    total = int(response.headers.get('content-length', 0))
+    if total == 0:
+        print("\nTotal size is not in content-length")
 
     start = 0
     with open(zip_file_path, 'wb') as f:
@@ -35,12 +44,15 @@ def download(url):
             if chunk:
                 size = f.write(chunk)
                 start += size
+
                 if total == 0:
                     continue
-                p = (start / total) * 100
-                round_5 = 5 * round(p / 5)
-                print(round_5, end="\r")
 
+                current_status = (start / total) * 100
+                rounded_status = round_number_to_x(current_status, 5)
+                print(f"{start_message} - {rounded_status}%", end="\r")
+
+    print(f"\nDownload completed - size - {round(start/(1024**2),2)} MB")
     return zip_file_path
 
 

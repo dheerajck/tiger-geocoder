@@ -17,6 +17,22 @@ db_parameters = {
 }
 
 
+def drop_and_create_new_database():
+    db_name = db_parameters["dbname"]
+    temp = db_parameters.copy()
+    temp.pop("dbname")
+    print(db_parameters)
+    print(temp)
+
+    connection = psycopg.connect(**temp)
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"DROP DATABASE {db_name}")
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"CREATE DATABASE {db_name}")
+
+
 class GeocodingConfidence(Enum):
     """Enum class representing the confidence levels of geocoding results."""
 

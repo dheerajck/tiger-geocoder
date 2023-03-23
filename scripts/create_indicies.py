@@ -2,8 +2,9 @@ from geocoder import Database
 
 
 def create_indicies():
-    db = Database()
+    print("\nCreating indicies")
 
+    db = Database()
     db.execute("SELECT install_missing_indexes();")
     db.execute("vacuum (analyze, verbose) tiger.addr;")
     db.execute("vacuum (analyze, verbose) tiger.edges;")

@@ -153,8 +153,10 @@ def load_national_data():
 
 
 def load_national_data_caller():
-    print("\n\nAdding US national data")
-
+    print("\nAdding US national data")
     current_working_directory = os.getcwd()
+    print("-------------------------------------------------")
+    print()
     load_national_data()
+    print("-------------------------------------------------")
     os.chdir(current_working_directory)
