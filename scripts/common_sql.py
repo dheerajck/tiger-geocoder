@@ -11,8 +11,12 @@ SHP2PGSQL = os.getenv("SHP2PGSQL")
 
 
 def reset_schema(db):
-    db.execute("DROP SCHEMA IF EXISTS tiger_staging CASCADE")
-    db.execute("CREATE SCHEMA tiger_staging")
+    db.execute(
+        """
+        DROP SCHEMA IF EXISTS tiger_staging CASCADE;
+        CREATE SCHEMA tiger_staging;
+        """
+    )
 
 
 def create_state_section_table_and_add_data(section, abbr, fips, primary_key, YEAR, dbf_files=None):

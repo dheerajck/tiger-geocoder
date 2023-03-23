@@ -101,9 +101,12 @@ def load_state_data(abbr, fips):
     download_extract(section, fips)
     create_state_section_table_and_add_data(section, abbr, fips, primary_key, YEAR)
 
-    db.execute(f"CREATE INDEX IF NOT EXISTS idx_{abbr}_place_soundex_name ON tiger_data.{abbr}_place USING btree (soundex(name))")
+    create_index_sql_queries = f"""
+    CREATE INDEX IF NOT EXISTS idx_{abbr}_place_soundex_name ON tiger_data.{abbr}_place USING btree (soundex(name));
+    CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_place_the_geom_gist ON tiger_data.{abbr}_place USING gist(the_geom);
+    """
 
-    db.execute(f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_place_the_geom_gist ON tiger_data.{abbr}_place USING gist(the_geom)")
+    db.execute(create_index_sql_queries)
 
     print(f"{start_message} - Done\n")
 
@@ -120,9 +123,12 @@ def load_state_data(abbr, fips):
     download_extract(section, fips)
     create_state_section_table_and_add_data(section, abbr, fips, primary_key, YEAR)
 
-    db.execute(f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_cousub_the_geom_gist ON tiger_data.{abbr}_cousub USING gist(the_geom)")
+    create_index_sql_queries = f"""
+    CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_cousub_the_geom_gist ON tiger_data.{abbr}_cousub USING gist(the_geom);
+    CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_cousub_countyfp ON tiger_data.{abbr}_cousub USING btree(countyfp);
+    """
 
-    db.execute(f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_cousub_countyfp ON tiger_data.{abbr}_cousub USING btree(countyfp)")
+    db.execute(create_index_sql_queries)
 
     print(f"{start_message} - Done\n")
 
@@ -163,11 +169,13 @@ def load_state_data(abbr, fips):
 
     create_state_section_table_and_add_data(section, abbr, fips, primary_key, YEAR, dbf_files)
 
-    db.execute(f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_faces_the_geom_gist ON tiger_data.{abbr}_faces USING gist(the_geom)")
+    create_index_sql_queries = f"""
+    CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_faces_the_geom_gist ON tiger_data.{abbr}_faces USING gist(the_geom);
+    CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_faces_tfid ON tiger_data.{abbr}_faces USING btree (tfid);
+    CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_faces_countyfp ON tiger_data.{abbr}_faces USING btree (countyfp);
+    """
 
-    db.execute(f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_faces_tfid ON tiger_data.{abbr}_faces USING btree (tfid)")
-
-    db.execute(f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_faces_countyfp ON tiger_data.{abbr}_faces USING btree (countyfp)")
+    db.execute(create_index_sql_queries)
 
     print(f"{start_message} - Done\n")
 
@@ -191,11 +199,13 @@ def load_state_data(abbr, fips):
 
     create_state_section_table_and_add_data(section, abbr, fips, primary_key, YEAR, dbf_files)
 
-    db.execute(f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_featnames_snd_name ON tiger_data.{abbr}_featnames USING btree (soundex(name))")
+    create_index_sql_queries = f"""
+    CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_featnames_snd_name ON tiger_data.{abbr}_featnames USING btree (soundex(name));
+    CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_featnames_lname ON tiger_data.{abbr}_featnames USING btree (lower(name));
+    CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_featnames_tlid_statefp ON tiger_data.{abbr}_featnames USING btree (tlid,statefp);
+    """
 
-    db.execute(f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_featnames_lname ON tiger_data.{abbr}_featnames USING btree (lower(name))")
-
-    db.execute(f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_featnames_tlid_statefp ON tiger_data.{abbr}_featnames USING btree (tlid,statefp)")
+    db.execute(create_index_sql_queries)
 
     print(f"{start_message} - Done\n")
 
@@ -219,17 +229,16 @@ def load_state_data(abbr, fips):
 
     create_state_section_table_and_add_data(section, abbr, fips, primary_key, YEAR, dbf_files)
 
-    db.execute(f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edges_tlid ON tiger_data.{abbr}_edges USING btree (tlid)")
+    create_index_sql_queries = f"""
+    CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edges_tlid ON tiger_data.{abbr}_edges USING btree (tlid);
+    CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edgestfidr ON tiger_data.{abbr}_edges USING btree (tfidr);
+    CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edges_tfidl ON tiger_data.{abbr}_edges USING btree (tfidl);
+    CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edges_countyfp ON tiger_data.{abbr}_edges USING btree (countyfp);
+    CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_edges_the_geom_gist ON tiger_data.{abbr}_edges USING gist(the_geom);
+    CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edges_zipl ON tiger_data.{abbr}_edges USING btree (zipl);
+    """
 
-    db.execute(f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edgestfidr ON tiger_data.{abbr}_edges USING btree (tfidr)")
-
-    db.execute(f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edges_tfidl ON tiger_data.{abbr}_edges USING btree (tfidl)")
-
-    db.execute(f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edges_countyfp ON tiger_data.{abbr}_edges USING btree (countyfp)")
-
-    db.execute(f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_edges_the_geom_gist ON tiger_data.{abbr}_edges USING gist(the_geom)")
-
-    db.execute(f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_edges_zipl ON tiger_data.{abbr}_edges USING btree (zipl)")
+    db.execute(create_index_sql_queries)
 
     print(f"{start_message} - Done\n")
 
@@ -253,11 +262,13 @@ def load_state_data(abbr, fips):
 
     create_state_section_table_and_add_data(section, abbr, fips, primary_key, YEAR, dbf_files)
 
-    db.execute(f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_addr_least_address ON tiger_data.{abbr}_addr USING btree (least_hn(fromhn,tohn))")
+    create_index_sql_queries = f"""
+    CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_addr_least_address ON tiger_data.{abbr}_addr USING btree (least_hn(fromhn,tohn));
+    CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_addr_tlid_statefp ON tiger_data.{abbr}_addr USING btree (tlid, statefp);
+    CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_addr_zip ON tiger_data.{abbr}_addr USING btree (zip);
+    """
 
-    db.execute(f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_addr_tlid_statefp ON tiger_data.{abbr}_addr USING btree (tlid, statefp)")
-
-    db.execute(f"CREATE INDEX IF NOT EXISTS idx_tiger_data_{abbr}_addr_zip ON tiger_data.{abbr}_addr USING btree (zip)")
+    db.execute(create_index_sql_queries)
 
     print(f"{start_message} - Done\n")
 

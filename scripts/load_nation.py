@@ -99,9 +99,12 @@ def load_national_data():
 
     db.execute("SELECT loader_load_staged_data(lower('county'), lower('county_all'))")
 
-    db.execute("CREATE INDEX IF NOT EXISTS tiger_data_county_the_geom_gist ON tiger_data.county_all USING gist(the_geom)")
+    create_index_sql_queries = """
+    CREATE INDEX IF NOT EXISTS tiger_data_county_the_geom_gist ON tiger_data.county_all USING gist(the_geom);
+    CREATE UNIQUE INDEX IF NOT EXISTS uidx_tiger_data_county_all_statefp_countyfp ON tiger_data.county_all USING btree(statefp,countyfp);
+    """
 
-    db.execute("CREATE UNIQUE INDEX IF NOT EXISTS uidx_tiger_data_county_all_statefp_countyfp ON tiger_data.county_all USING btree(statefp,countyfp)")
+    db.execute(create_index_sql_queries)
 
     db.execute("VACUUM ANALYZE tiger_data.county_all")
 
