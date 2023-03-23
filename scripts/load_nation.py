@@ -7,6 +7,9 @@ from geocoder import Database
 
 from .helpers import clear_temp, download, run_shp2pgsql
 
+from .common_sql import reset_schema
+
+
 load_dotenv(".env")
 
 GISDATA_FOLDER = os.getenv("GISDATA_FOLDER")
@@ -56,28 +59,26 @@ def load_national_data():
     print(start_message)
     download_extract(country, section)
 
-    db.execute("DROP SCHEMA IF EXISTS tiger_staging CASCADE;")
-    db.execute("CREATE SCHEMA tiger_staging;")
+    reset_schema(db)
 
     db.execute(
         """CREATE TABLE IF NOT EXISTS tiger_data.state_all(
             CONSTRAINT pk_state_all PRIMARY KEY (statefp),
             CONSTRAINT uidx_state_all_stusps  UNIQUE (stusps), 
             CONSTRAINT uidx_state_all_gid UNIQUE (gid)
-        ) INHERITS(tiger.state);
+        ) INHERITS(tiger.state)
         """
     )
 
     command = f"shp2pgsql -D -c -s 4269 -g the_geom -W 'latin1' tl_{YEAR}_us_state.dbf tiger_staging.state"
     run_shp2pgsql(command)
 
-    db.execute("SELECT loader_load_staged_data(lower('state'), lower('state_all')); ")
+    db.execute("SELECT loader_load_staged_data(lower('state'), lower('state_all'))")
 
-    db.execute(
-        "CREATE INDEX IF NOT EXISTS tiger_data_state_all_the_geom_gist ON tiger_data.state_all USING gist(the_geom);"
-    )
+    db.execute("CREATE INDEX IF NOT EXISTS tiger_data_state_all_the_geom_gist ON tiger_data.state_all USING gist(the_geom)")
 
     db.execute("VACUUM ANALYZE tiger_data.state_all")
+
     print(f"{start_message} - Done\n")
 
     ###############
@@ -91,15 +92,14 @@ def load_national_data():
     print(start_message)
     download_extract(country, section)
 
-    db.execute("DROP SCHEMA IF EXISTS tiger_staging CASCADE;")
-    db.execute("CREATE SCHEMA tiger_staging;")
+    reset_schema(db)
 
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS tiger_data.county_all(
             CONSTRAINT pk_tiger_data_county_all PRIMARY KEY (cntyidfp),
             CONSTRAINT uidx_tiger_data_county_all_gid UNIQUE (gid)
-        ) INHERITS(tiger.county);
+        ) INHERITS(tiger.county)
         """
     )
 
@@ -112,21 +112,15 @@ def load_national_data():
     command = f"shp2pgsql -D -c -s 4269 -g the_geom -W 'latin1' tl_{YEAR}_us_county.dbf tiger_staging.county"
     run_shp2pgsql(command)
 
-    db.execute(
-        """
-        ALTER TABLE tiger_staging.county RENAME geoid TO cntyidfp;
-        SELECT loader_load_staged_data(lower('county'), lower('county_all'));
-        """
-    )
+    db.execute("ALTER TABLE tiger_staging.county RENAME geoid TO cntyidfp")
 
-    db.execute(
-        """
-        CREATE INDEX IF NOT EXISTS tiger_data_county_the_geom_gist ON tiger_data.county_all USING gist(the_geom);
-        CREATE UNIQUE INDEX IF NOT EXISTS uidx_tiger_data_county_all_statefp_countyfp ON tiger_data.county_all USING btree(statefp,countyfp);
-        """
-    )
+    db.execute("SELECT loader_load_staged_data(lower('county'), lower('county_all'))")
 
-    db.execute("VACUUM ANALYZE tiger_data.county_all;")
+    db.execute("CREATE INDEX IF NOT EXISTS tiger_data_county_the_geom_gist ON tiger_data.county_all USING gist(the_geom)")
+
+    db.execute("CREATE UNIQUE INDEX IF NOT EXISTS uidx_tiger_data_county_all_statefp_countyfp ON tiger_data.county_all USING btree(statefp,countyfp)")
+
+    db.execute("VACUUM ANALYZE tiger_data.county_all")
 
     # Create table tiger_data.county_all_lookup
     db.execute(
@@ -143,20 +137,23 @@ def load_national_data():
         INSERT INTO tiger_data.county_all_lookup (st_code, state, co_code, name)
         SELECT CAST(s.statefp as integer), s.abbrev, CAST(c.countyfp as integer), c.name
         FROM tiger_data.county_all AS c
-        INNER JOIN state_lookup AS s ON s.statefp = c.statefp;
+        INNER JOIN state_lookup AS s ON s.statefp = c.statefp
         """
     )
 
     # Vacuum analyze tables
-    db.execute("VACUUM ANALYZE tiger_data.county_all_lookup;")
+    db.execute("VACUUM ANALYZE tiger_data.county_all_lookup")
+
     print(f"{start_message} - Done\n")
 
 
 def load_national_data_caller():
-    print("\nAdding US national data")
     current_working_directory = os.getcwd()
+    print("\nAdding US national data")
+
     print("-------------------------------------------------")
     print()
     load_national_data()
     print("-------------------------------------------------")
+
     os.chdir(current_working_directory)
