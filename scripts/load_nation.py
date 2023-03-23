@@ -1,12 +1,12 @@
 import os
+import zipfile
 from pathlib import Path
 
 from dotenv import load_dotenv
 from geocoder import Database
 
-from .helpers import clear_temp, download, run_shp2pgsql, extract_folders_of_given_section
-
 from .common_sql import reset_schema
+from .helpers import clear_temp, download, run_shp2pgsql
 
 
 load_dotenv(".env")
@@ -25,10 +25,10 @@ BASE_URL = f"https://{BASE_PATH}"
 
 def download_extract(section, country):
     current_url = f"{BASE_URL}/{section.upper()}/tl_{YEAR}_{country}_{section}.zip"
-
-    download(current_url)
     clear_temp(TEMP_DIR)
-    extract_folders_of_given_section(section, country, TEMP_DIR)
+    downloaded_file_full_path = download(current_url)
+    with zipfile.ZipFile(downloaded_file_full_path) as current_file:
+        current_file.extractall(TEMP_DIR)
 
 
 def load_national_data():

@@ -1,14 +1,15 @@
 import json
 import os
 import re
+import zipfile
 from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
 from geocoder import Database
 
-from .helpers import clear_temp, download, extract_folders_of_given_section
 from .common_sql import create_state_section_table_and_add_data
+from .helpers import clear_temp, download
 
 
 load_dotenv(".env")
@@ -71,24 +72,24 @@ def get_fips_files(url, fips):
 
 def download_extract(section, fips):
     current_url = f"{BASE_URL}/{section.upper()}/tl_{YEAR}_{fips}_{section}.zip"
-
-    download(current_url)
     clear_temp(TEMP_DIR)
-    extract_folders_of_given_section(section, fips, TEMP_DIR)
+    downloaded_file_full_path = download(current_url)
+    with zipfile.ZipFile(downloaded_file_full_path) as current_file:
+        current_file.extractall(TEMP_DIR)
 
 
 def download_extract_urls_of_all_files(section, fips):
     current_url = f"{BASE_URL}/{section.upper()}"
     files = get_fips_files(current_url, fips)
+    clear_temp(TEMP_DIR)
 
     for i in files:
         # files are downloaded to f"{BASE_PATH}/{section.upper()}/{i}"
         # that is same as f"{BASE_URL}/{section.upper()}/{i}".lstrip("https://")
         current_file_url = f"{BASE_URL}/{section.upper()}/{i}"
-        download(current_file_url)
-
-    clear_temp(TEMP_DIR)
-    extract_folders_of_given_section(section, fips, TEMP_DIR)
+        downloaded_file_full_path = download(current_file_url)
+        with zipfile.ZipFile(downloaded_file_full_path) as current_file:
+            current_file.extractall(TEMP_DIR)
 
 
 def load_state_data(abbr, fips):
