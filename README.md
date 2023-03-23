@@ -17,12 +17,8 @@ CREATE USER super_user WITH SUPERUSER PASSWORD 'password';
 3. Replace the placeholder values in the .env file with the actual values for your local environment
 4. Save the changes made to the .env file, also make sure these environment variables names are not previously used for other purpose and set directly to avoid any possible collision
 
-- UNZIPTOOL in .env should point to unzip or 7zip path
-- For Unix like systems: unzip executable which is usually already installed on most Unix like platforms
-- For Windows, 7-zip which is a free compress/uncompress tool you can download from http://www.7-zip.org/
-- You need to iinstall shp2pgsql, its installed by default when you install PostGIS, add its path in SHP2PGSQL 
-- You should install wget, wget which is a web grabber tool usually installed on most Unix/Linux, add its path in WGETTOOL systems
-- If you are on windows and doesnt have wget you can download it from here https://gnuwin32.sourceforge.net/packages/wget.htm
+- You can use one of the two scripts to setup your postgis tiger database in your device, tiger_setup.py and download_script.py
+- Install unzip or 7z(unziptool) and wget(wgettool), replace their placeholder path if you are using tiger_setup.py, you dont need them if you are using download_script.py
 - Check https://www.census.gov/library/reference/code-lists/ansi.html#state for state list
 - The state you added should be present in "abbr - fips.json" file, if not you can add it with its fips code in "abbr - fips.json" file and see if that fips have data in their web server
 - Now make sure every path in .env file is correct and installed properly by calling them from your terminal
@@ -43,8 +39,14 @@ source venv/bin/activate
 ```
 
 
-## Now run tiger_setup.py
+## Now run script to setup db
 
+Run this script if you dont want to install and add their path to .env file
+```
+python download_script.py 
+```
+
+Run this script if you already have installed unziptool and wgettool and added their path to .env file and when previous one didnt work for you for some reason
 ```
 python tiger_setup.py
 ```
