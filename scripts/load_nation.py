@@ -24,16 +24,11 @@ BASE_URL = f"https://{BASE_PATH}"
 
 
 def download_extract(section, country):
-    current_working_directory = os.getcwd()
-
     current_url = f"{BASE_URL}/{section.upper()}/tl_{YEAR}_{country}_{section}.zip"
 
     download(current_url)
     clear_temp(TEMP_DIR)
     extract_folders_of_given_section(section, country, TEMP_DIR)
-
-    # this is needed as we need to let os point to new temp directory which is at the same location as its deleted
-    os.chdir(current_working_directory)
 
 
 def load_national_data():

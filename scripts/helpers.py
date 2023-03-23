@@ -101,6 +101,7 @@ def clear_temp(temp_dir):
 
 
 def extract_folders_of_given_section(section, country_fips, extract_to_folder):
+    current_path = os.getcwd()
     BASE_PATH = f"www2.census.gov/geo/tiger/TIGER{YEAR}"
     os.chdir(GISDATA_FOLDER / BASE_PATH / section.upper())
 
@@ -108,3 +109,4 @@ def extract_folders_of_given_section(section, country_fips, extract_to_folder):
         if z.startswith(f"tl_{YEAR}_{country_fips}") and z.endswith(f"_{section}.zip"):
             with zipfile.ZipFile(z) as current_file:
                 current_file.extractall(extract_to_folder)
+    os.chdir(current_path)

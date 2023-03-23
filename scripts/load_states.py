@@ -70,21 +70,14 @@ def get_fips_files(url, fips):
 
 
 def download_extract(section, fips):
-    current_working_directory = os.getcwd()
-
     current_url = f"{BASE_URL}/{section.upper()}/tl_{YEAR}_{fips}_{section}.zip"
 
     download(current_url)
     clear_temp(TEMP_DIR)
     extract_folders_of_given_section(section, fips, TEMP_DIR)
 
-    # this is needed as we need to let os point to new temp directory which is at the same location as its deleted
-    os.chdir(current_working_directory)
-
 
 def download_extract_urls_of_all_files(section, fips):
-    current_working_directory = os.getcwd()
-
     current_url = f"{BASE_URL}/{section.upper()}"
     files = get_fips_files(current_url, fips)
 
@@ -96,8 +89,6 @@ def download_extract_urls_of_all_files(section, fips):
 
     clear_temp(TEMP_DIR)
     extract_folders_of_given_section(section, fips, TEMP_DIR)
-
-    os.chdir(current_working_directory)
 
 
 def load_state_data(abbr, fips):
