@@ -12,6 +12,7 @@ load_dotenv(".env")
 DB_USER = os.getenv("DB_USER")
 DB_NAME = os.getenv("DB_NAME")
 PSQL = os.getenv("PSQL")
+GISDATA_FOLDER = os.getenv("GISDATA_FOLDER")
 
 
 def round_number_to_x(number, x):
@@ -24,9 +25,11 @@ def run_shp2pgsql(command):
 
 
 def download(url):
+    current_working_directory = os.getcwd()
+    os.chdir(GISDATA_FOLDER)
+
     start_message = "Started downloading"
     zip_file_path = Path(url.lstrip("https://"))
-    return zip_file_path
 
     start_message = f"{start_message} - {zip_file_path}"
     print(start_message, end="\r")
@@ -55,6 +58,8 @@ def download(url):
                 print(f"{start_message} - {rounded_status}%", end="\r")
 
     print(f"\nDownload completed - size - {round(start/(1024**2),2)} MB")
+
+    os.chdir(current_working_directory)
     return zip_file_path
 
 

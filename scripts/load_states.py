@@ -22,7 +22,8 @@ SHP2PGSQL = os.getenv("SHP2PGSQL")
 
 # Define paths
 GISDATA_FOLDER = Path(GISDATA_FOLDER)
-TEMP_DIR = Path(f"{GISDATA_FOLDER}/temp/")
+TEMP_DIR = GISDATA_FOLDER / "temp"
+
 BASE_PATH = f"www2.census.gov/geo/tiger/TIGER{YEAR}"
 BASE_URL = f"https://{BASE_PATH}"
 
@@ -71,25 +72,23 @@ def get_fips_files(url, fips):
 
 def download_extract(fips, section):
     current_working_directory = os.getcwd()
-    os.chdir(GISDATA_FOLDER)
 
     current_url = f"{BASE_URL}/{section.upper()}/tl_{YEAR}_{fips}_{section}.zip"
 
     download(current_url)
-
     clear_temp(TEMP_DIR)
-    os.chdir(f"{GISDATA_FOLDER}/{BASE_PATH}/{section.upper()}")
+
+    os.chdir(GISDATA_FOLDER / BASE_PATH / section.upper())
     for z in os.listdir(os.getcwd()):
         if z.startswith(f"tl_{YEAR}_{fips}") and z.endswith(f"_{section}.zip"):
-            with zipfile.ZipFile(z) as place_zip:
-                place_zip.extractall(TEMP_DIR)
+            with zipfile.ZipFile(z) as current_file:
+                current_file.extractall(TEMP_DIR)
 
     os.chdir(current_working_directory)
 
 
 def download_extract_urls_of_all_files(fips, section):
     current_working_directory = os.getcwd()
-    os.chdir(GISDATA_FOLDER)
 
     files = get_fips_files(f"{BASE_URL}/{section.upper()}", fips)
 
@@ -98,11 +97,12 @@ def download_extract_urls_of_all_files(fips, section):
         download(url)
 
     clear_temp(TEMP_DIR)
+
     os.chdir(GISDATA_FOLDER / BASE_PATH / section.upper())
     for z in os.listdir(os.getcwd()):
         if z.startswith(f"tl_{YEAR}_{fips}") and z.endswith(f"_{section}.zip"):
-            with zipfile.ZipFile(z) as place_zip:
-                place_zip.extractall(TEMP_DIR)
+            with zipfile.ZipFile(z) as current_file:
+                current_file.extractall(TEMP_DIR)
 
     os.chdir(current_working_directory)
 
@@ -183,7 +183,7 @@ def load_state_data(abbr, fips):
     download_extract_urls_of_all_files(fips, section)
 
     dbf_files = []
-
+    # finding all files with specific type of name in temp folder
     for z in os.listdir(os.getcwd()):
         if z.endswith(".dbf") and "faces" in z:
             dbf_files.append(z)

@@ -18,25 +18,25 @@ SHP2PGSQL = os.getenv("SHP2PGSQL")
 
 # Define paths
 GISDATA_FOLDER = Path(GISDATA_FOLDER)
-TEMP_DIR = Path(f"{GISDATA_FOLDER}/temp/")
+TEMP_DIR = GISDATA_FOLDER / "temp"
+
 BASE_PATH = f"www2.census.gov/geo/tiger/TIGER{YEAR}"
 BASE_URL = f"https://{BASE_PATH}"
 
 
 def download_extract(country, section):
     current_working_directory = os.getcwd()
-    os.chdir(GISDATA_FOLDER)
 
     current_url = f"{BASE_URL}/{section.upper()}/tl_{YEAR}_{country}_{section}.zip"
 
     download(current_url)
-
     clear_temp(TEMP_DIR)
-    os.chdir(f"{GISDATA_FOLDER}/{BASE_PATH}/{section.upper()}")
+
+    os.chdir(GISDATA_FOLDER / BASE_PATH / section.upper())
     for z in os.listdir(os.getcwd()):
         if z.startswith(f"tl_{YEAR}_{country}") and z.endswith(f"_{section}.zip"):
-            with zipfile.ZipFile(z) as place_zip:
-                place_zip.extractall(TEMP_DIR)
+            with zipfile.ZipFile(z) as current_file:
+                current_file.extractall(TEMP_DIR)
 
     os.chdir(current_working_directory)
 
@@ -70,6 +70,8 @@ def load_national_data():
         """
     )
 
+    # os.chdir(TEMP_DIR)
+    # here tl_{YEAR}_us_state.dbf is in TEMP_DIR
     command = f"{SHP2PGSQL} -D -c -s 4269 -g the_geom -W 'latin1' tl_{YEAR}_us_state.dbf tiger_staging.state"
     run_shp2pgsql(command)
 
