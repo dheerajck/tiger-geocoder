@@ -77,11 +77,27 @@ def clear_temp(temp_dir):
     # So if a program is sitting in the directory, waiting for things, it will have the rug pulled out from under it. –
     # https://stackoverflow.com/a/186236
 
-    try:
-        shutil.rmtree(temp_dir)
-    except FileNotFoundError:
-        pass
-    temp_dir.mkdir(parents=True, exist_ok=True)
+    # current_working_directory = os.getcwd()
+    # clear_temp(TEMP_DIR)
+    # print(os.getcwd())
+    # this will throw os.getcwd no such file or directory
+    # to fix we need to do os.chdir(TEMP_DIR)
+
+    # first working code which throw error no such file or directory
+    # when accessing this folder again even when the same folder is created
+    # try:
+    #     shutil.rmtree(temp_dir)
+    # except FileNotFoundError:
+    #     pass
+    # temp_dir.mkdir(parents=True, exist_ok=True)
+
+    for child in temp_dir.iterdir():
+        if child.is_file:
+            child.unlink()
+        else:
+            # shouldnt execute as there will be no folders inside temp
+            raise Exception("shouldnt execute as there will be no folders inside temp")
+            shutil.rmtree(child)
 
 
 def extract_folders_of_given_section(section, country_fips, extract_to_folder):
