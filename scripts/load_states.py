@@ -78,6 +78,7 @@ def download_extract(section, fips):
     clear_temp(TEMP_DIR)
     extract_folders_of_given_section(section, fips, TEMP_DIR)
 
+    # this is needed as we need to let os point to new temp directory which is at the same location as its deleted
     os.chdir(current_working_directory)
 
 

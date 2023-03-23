@@ -33,12 +33,12 @@ def download(url):
     os.chdir(GISDATA_FOLDER)
 
     start_message = "Started downloading"
-    zip_file_path = Path(url.lstrip("https://"))
+    zip_file_path = Path(url.lstrip("https://")).resolve()
 
     start_message = f"{start_message} - {zip_file_path}"
     print(start_message, end="\r")
 
-    parent = zip_file_path.resolve().parent
+    parent = zip_file_path.parent
     parent.mkdir(parents=True, exist_ok=True)
 
     response = requests.get(url, stream=True)
@@ -64,12 +64,19 @@ def download(url):
     print(f"\nDownload completed - size - {round(start/(1024**2),2)} MB")
 
     os.chdir(current_working_directory)
+
+    # returns full path, in gisdata as its resolved before changing direcory
     return zip_file_path
 
 
 def clear_temp(temp_dir):
     # this might create issues if current working directory is temp_dir
     # and os.getcwd() is called before adding some data like extracting files to this folder
+
+    # Because the new directory and the old one will not be the same.
+    # So if a program is sitting in the directory, waiting for things, it will have the rug pulled out from under it. –
+    # https://stackoverflow.com/a/186236
+
     try:
         shutil.rmtree(temp_dir)
     except FileNotFoundError:
