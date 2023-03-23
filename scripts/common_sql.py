@@ -1,5 +1,13 @@
+import os
+
+from dotenv import load_dotenv
 from geocoder import Database
+
 from .helpers import run_shp2pgsql
+
+
+load_dotenv(".env")
+SHP2PGSQL = os.getenv("SHP2PGSQL")
 
 
 def reset_schema(db):
@@ -32,7 +40,7 @@ def create_state_section_table_and_add_data(section, abbr, fips, primary_key, YE
         dbf_files = [f"tl_{YEAR}_{fips}_{section}.dbf"]
 
     for file in dbf_files:
-        run_shp2pgsql(f"shp2pgsql -D -c -s 4269 -g the_geom -W 'latin1' {file} tiger_staging.{abbr}_{section}")
+        run_shp2pgsql(f"{SHP2PGSQL} -D -c -s 4269 -g the_geom -W 'latin1' {file} tiger_staging.{abbr}_{section}")
 
         if section in {"place", "cousub", "tract", "bg"}:
             db.execute(f"ALTER TABLE tiger_staging.{abbr}_{section} RENAME geoid TO {primary_key}")

@@ -11,6 +11,7 @@ load_dotenv(".env")
 
 DB_USER = os.getenv("DB_USER")
 DB_NAME = os.getenv("DB_NAME")
+PSQL = os.getenv("PSQL")
 
 
 def round_number_to_x(number, x):
@@ -18,13 +19,14 @@ def round_number_to_x(number, x):
 
 
 def run_shp2pgsql(command):
-    new_command = f"{command} | psql -U {DB_USER} -d {DB_NAME}"
+    new_command = f"{command} | {PSQL} -U {DB_USER} -d {DB_NAME}"
     shp2pgsql_output = subprocess.run(new_command, shell=True, capture_output=True, text=True)
 
 
 def download(url):
     start_message = "Started downloading"
     zip_file_path = Path(url.lstrip("https://"))
+    return zip_file_path
 
     start_message = f"{start_message} - {zip_file_path}"
     print(start_message, end="\r")

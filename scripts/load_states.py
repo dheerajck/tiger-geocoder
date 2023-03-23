@@ -14,13 +14,11 @@ from .common_sql import create_state_section_table_and_add_data
 
 load_dotenv(".env")
 
-DB_USER = os.getenv("DB_USER")
-DB_NAME = os.getenv("DB_NAME")
-YEAR = os.getenv("YEAR")
 GISDATA_FOLDER = os.getenv("GISDATA_FOLDER")
 GEOCODER_STATES = os.getenv("GEOCODER_STATES")
-PSQL = os.getenv("PSQL")
+YEAR = os.getenv("YEAR")
 SHP2PGSQL = os.getenv("SHP2PGSQL")
+
 
 # Define paths
 GISDATA_FOLDER = Path(GISDATA_FOLDER)
@@ -39,7 +37,7 @@ REGEX_specific_character_pattern = re.compile('[\">]')
 
 def get_fips_from_abbr(abbr):
     state_to_fips = ABBR_FIPS
-    return state_to_fips.get(abbr, 0)
+    return state_to_fips.get(abbr.strip(), 0)
 
 
 def get_fips_files(url, fips):
@@ -440,7 +438,7 @@ def load_states_data_caller():
         fips = get_fips_from_abbr(abbr)
 
         if fips == 0:
-            print(f"Error: f{abbr} is not a recognized US state abbreviation\n")
+            print(f"Error: {abbr} is not a recognized US state abbreviation\n")
         else:
             print(f"Loading state data for: {abbr} {fips}\n")
             load_state_data(abbr, fips)

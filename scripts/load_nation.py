@@ -70,7 +70,7 @@ def load_national_data():
         """
     )
 
-    command = f"shp2pgsql -D -c -s 4269 -g the_geom -W 'latin1' tl_{YEAR}_us_state.dbf tiger_staging.state"
+    command = f"{SHP2PGSQL} -D -c -s 4269 -g the_geom -W 'latin1' tl_{YEAR}_us_state.dbf tiger_staging.state"
     run_shp2pgsql(command)
 
     db.execute("SELECT loader_load_staged_data(lower('state'), lower('state_all'))")
@@ -109,7 +109,7 @@ def load_national_data():
     #     with connection.cursor() as cur:
     #         cur.copy_from(pipe, "tiger_staging.county")
 
-    command = f"shp2pgsql -D -c -s 4269 -g the_geom -W 'latin1' tl_{YEAR}_us_county.dbf tiger_staging.county"
+    command = f"{SHP2PGSQL} -D -c -s 4269 -g the_geom -W 'latin1' tl_{YEAR}_us_county.dbf tiger_staging.county"
     run_shp2pgsql(command)
 
     db.execute("ALTER TABLE tiger_staging.county RENAME geoid TO cntyidfp")
