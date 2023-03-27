@@ -97,12 +97,6 @@ class Database:
             latitude = result[1]
             longitude = result[2]
 
-            # Recreating the address
-            # remove opening and closing brackets
-            # address = address[1:-1]
-            # address = address.split(',')
-            # address = f"{' '.join(address[:6]).strip()}, {' '.join(address[6:-1]).strip()}"
-
             # Converting the rating into a confidence score
             if rating in {0, 1}:
                 confidence = GeocodingConfidence.EXCELLENT

@@ -34,7 +34,7 @@ def create_extension(db):
     CREATE EXTENSION IF NOT EXISTS address_standardizer;
     CREATE EXTENSION IF NOT EXISTS address_standardizer_data_us;
     """
-    # sql_command = """CREATE DATABASE project_name""" psycopg.errors.DuplicateDatabase
+
     try:
         cursor.execute(sql_command)
         print(cursor.fetchone())
@@ -137,7 +137,6 @@ def write_nation_script(db, profile_name):
     try:
         cursor.execute(sql_command, (profile_name,))
         result = cursor.fetchone()
-        # print(result)
 
     except psycopg.Error as e:
         print(e)
@@ -156,7 +155,6 @@ def write_state_script(db, profile_name, list_of_states):
     try:
         cursor.execute(sql_command, (profile_name,))
         result = cursor.fetchone()
-        # print(result)
 
     except psycopg.Error as e:
         print(e)

@@ -27,7 +27,7 @@ TEMP_DIR = GISDATA_FOLDER / "temp"
 BASE_PATH = f"www2.census.gov/geo/tiger/TIGER{YEAR}"
 BASE_URL = f"https://{BASE_PATH}"
 
-ABBR_FIPS = json.load(open('scripts/abbr - fips.json'))
+ABBR_FIPS = json.load(open('abbr - fips.json'))
 
 # match substrings that starts with "tl and ends with > in a string
 REGEX_tl_filename_pattern = re.compile('(?=\"tl)(.*?)(?<=>)')
