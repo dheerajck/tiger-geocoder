@@ -134,17 +134,20 @@ def update_path(db, profile_name, path_dict):
 def write_nation_script(db, profile_name):
     cursor = db.connection.cursor()
     sql_command = "SELECT Loader_Generate_Nation_Script(%s)"
+
     try:
         cursor.execute(sql_command, (profile_name,))
         result = cursor.fetchone()
+        nation_script = result[0]
 
     except psycopg.Error as e:
-        print(e)
-        return None
+        raise Exception(f"write_nation_script\n{e}")
+
     else:
         with open("load_nation.sh", "w") as f:
-            f.write(result[0])
-        return result[0]
+            f.write(nation_script)
+
+        return nation_script
 
 
 def write_state_script(db, profile_name, list_of_states):
@@ -157,17 +160,17 @@ def write_state_script(db, profile_name, list_of_states):
         result = cursor.fetchall()
 
     except psycopg.Error as e:
-        print(e)
-        # return None
-        return f"echo {e}"
+        raise Exception(f"write_state_script\n{e}")
 
     else:
         with open("load_states.sh", "w") as f:
             for state_script in result:
                 f.write(state_script[0])
+
         with open("load_states.sh", "r") as f:
-            result = f.read()
-        return result
+            state_script_for_given_states = f.read()
+
+        return state_script_for_given_states
 
 
 def run_script(string):
@@ -249,9 +252,9 @@ if __name__ == "__main__":
     update_folder(db, PATH_DICT["GISDATA_FOLDER"])
 
     output = write_nation_script(db, profile_name)
-    run_script(output)
+    # run_script(output)
 
     output = write_state_script(db, profile_name, list_of_states)
-    run_script(output)
+    # run_script(output)
 
     create_index_and_clean_tiger_table(db)
