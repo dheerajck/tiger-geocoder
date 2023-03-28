@@ -412,6 +412,8 @@ def load_states_data_caller():
     else:
         GEOCODER_STATES_LIST = GEOCODER_STATES.split(",")
 
+    GEOCODER_STATES_LIST = [i.strip() for i in GEOCODER_STATES_LIST]  # "MA, RI" wil not add RI as GEOCODER_STATES_LIST = ["MA", " RI"] wouldnt load "RI"
+
     print(f"\nAdding US states data for {GEOCODER_STATES_LIST}")
 
     print("-------------------------------------------------")

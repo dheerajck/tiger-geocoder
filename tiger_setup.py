@@ -230,6 +230,8 @@ if __name__ == "__main__":
     else:
         list_of_states = list_of_states_string.split(",")
 
+    list_of_states = [i.strip() for i in list_of_states]  # "MA, RI" wil not add RI as list_of_states = ["MA", " RI"] wouldnt load "RI"
+
     create_extension(db)
     create_folders()
 
