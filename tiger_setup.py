@@ -1,5 +1,6 @@
 import json
 import os
+import platform
 import subprocess
 import sys
 from pathlib import Path
@@ -7,6 +8,7 @@ from pathlib import Path
 import psycopg
 from dotenv import load_dotenv
 from geocoder import Database
+
 
 load_dotenv(".env")
 
@@ -25,8 +27,6 @@ PATH_DICT = {
 
 
 def create_extension(db):
-    cursor = db.connection.cursor()
-
     sql_command = """
     CREATE EXTENSION IF NOT EXISTS postgis;
     CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
@@ -36,28 +36,12 @@ def create_extension(db):
     """
 
     try:
+        cursor = db.connection.cursor()
         cursor.execute(sql_command)
-        print(cursor.fetchone())
 
     except psycopg.Error as e:
         print(e)
         return None
-
-
-def create_folders():
-    folder_path = Path(PATH_DICT["GISDATA_FOLDER"])
-    folder_path.mkdir(parents=True, exist_ok=True)
-    temp_folder_path = folder_path / "temp"
-    temp_folder_path.mkdir(parents=True, exist_ok=True)
-
-
-def is_windows_operating_system():
-    import platform
-
-    if platform.system() == "Windows":
-        return True
-    else:
-        return False
 
 
 def create_profile(db, profile_name, operating_system):
@@ -68,10 +52,10 @@ def create_profile(db, profile_name, operating_system):
         loader, environ_set_command, county_process_command
     FROM tiger.loader_platform
     WHERE os = %s;"""
-    cursor = db.connection.cursor()
+
     try:
+        cursor = db.connection.cursor()
         cursor.execute(sql_command, (profile_name, operating_system))
-        # print(cursor.fetchone())
 
     except psycopg.Error as e:
         print(e)
@@ -80,12 +64,11 @@ def create_profile(db, profile_name, operating_system):
 
 def update_folder(db, folder_path):
     folder_path = str(Path(folder_path).resolve())
-    cursor = db.connection.cursor()
-
     sql_command = "UPDATE tiger.loader_variables SET staging_fold=%s;"
+
     try:
+        cursor = db.connection.cursor()
         cursor.execute(sql_command, (folder_path,))
-        # print(cursor.fetchone())
 
     except psycopg.Error as e:
         print(e)
@@ -93,19 +76,20 @@ def update_folder(db, folder_path):
 
 
 def update_path(db, profile_name, path_dict):
-    cursor = db.connection.cursor()
-    sql_command = "SELECT declare_sect FROM tiger.loader_platform WHERE os=%s;"
+    select_sql_command = "SELECT declare_sect FROM tiger.loader_platform WHERE os=%s;"
+
     try:
-        cursor.execute(sql_command, (profile_name,))
-        # print(cursor.fetchone())
+        cursor = db.connection.cursor()
+        cursor.execute(select_sql_command, (profile_name,))
 
     except psycopg.Error as e:
         print(e)
         return None
+
     else:
         path_string = cursor.fetchone()[0]
         path_string_list = path_string.split("\n")
-        print(path_string)
+        # print(path_string)
 
         for name, value in path_dict.items():
             if value not in [None, ""]:
@@ -116,34 +100,35 @@ def update_path(db, profile_name, path_dict):
                         path_string_list[index] = "=".join(temp)
 
         path_string = "\n".join(path_string_list)
-        print(path_string)
+        # print(path_string)
 
-    sql_command = "UPDATE tiger.loader_platform SET declare_sect=%s WHERE os=%s"
+    update_sql_command = "UPDATE tiger.loader_platform SET declare_sect=%s WHERE os=%s"
+
     try:
+        cursor = db.connection.cursor()
         cursor.execute(
-            sql_command,
+            update_sql_command,
             (path_string, profile_name),
         )
-        # print(cursor.fetchone())
+
     except psycopg.Error as e:
         print(e)
-        # return None
-        return f"echo {e}"
+        return None
 
 
 def write_nation_script(db, profile_name):
-    cursor = db.connection.cursor()
     sql_command = "SELECT Loader_Generate_Nation_Script(%s)"
 
     try:
+        cursor = db.connection.cursor()
         cursor.execute(sql_command, (profile_name,))
         result = cursor.fetchone()
-        nation_script = result[0]
 
     except psycopg.Error as e:
         raise Exception(f"write_nation_script\n{e}")
 
     else:
+        nation_script = result[0]
         with open("load_nation.sh", "w") as f:
             f.write(nation_script)
 
@@ -151,11 +136,10 @@ def write_nation_script(db, profile_name):
 
 
 def write_state_script(db, profile_name, list_of_states):
-    cursor = db.connection.cursor()
-
     sql_command = f"SELECT Loader_Generate_Script(ARRAY{list_of_states}, %s)"
 
     try:
+        cursor = db.connection.cursor()
         cursor.execute(sql_command, (profile_name,))
         result = cursor.fetchall()
 
@@ -163,40 +147,30 @@ def write_state_script(db, profile_name, list_of_states):
         raise Exception(f"write_state_script\n{e}")
 
     else:
-        with open("load_states.sh", "w") as f:
-            for state_script in result:
-                f.write(state_script[0])
+        state_script_for_given_states = []
+        for state_script in result:
+            state_script_for_given_states.append(state_script[0])
 
-        with open("load_states.sh", "r") as f:
-            state_script_for_given_states = f.read()
+        state_script_for_given_states = "\n".join(state_script_for_given_states)
+        with open("load_states.sh", "w") as f:
+            f.write(state_script_for_given_states)
 
         return state_script_for_given_states
 
 
-def run_script(string):
-    process = subprocess.Popen(string, shell=True, stdout=subprocess.PIPE)
-    for c in iter(lambda: process.stdout.read(1), b""):
-        sys.stdout.buffer.write(c)
-
-    # result = subprocess.run(string, shell=True, capture_output=True, text=True)
-    # print(result.stdout)
-
-
 def create_index_and_clean_tiger_table(db):
-    cursor = db.connection.cursor()
     sql_command = """
     SELECT install_missing_indexes();
     """
+
     try:
+        cursor = db.connection.cursor()
         cursor.execute(sql_command)
-        # print(cursor.fetchone())
 
     except psycopg.Error as e:
         print(e)
         return None
 
-    cursor.close()
-    cursor = db.connection.cursor()
     sql_command = """
     vacuum (analyze, verbose) tiger.addr;
     vacuum (analyze, verbose) tiger.edges;
@@ -213,11 +187,33 @@ def create_index_and_clean_tiger_table(db):
     for sql in sql_command.split(";"):
         try:
             cursor.execute(sql)
-            # print(cursor.fetchone())
 
         except psycopg.Error as e:
             print(e)
             return None
+
+
+def create_folders():
+    folder_path = Path(PATH_DICT["GISDATA_FOLDER"])
+    folder_path.mkdir(parents=True, exist_ok=True)
+    temp_folder_path = folder_path / "temp"
+    temp_folder_path.mkdir(parents=True, exist_ok=True)
+
+
+def is_windows_operating_system():
+    if platform.system() == "Windows":
+        return True
+    else:
+        return False
+
+
+def run_script(string):
+    process = subprocess.Popen(string, shell=True, stdout=subprocess.PIPE)
+    for c in iter(lambda: process.stdout.read(1), b""):
+        sys.stdout.buffer.write(c)
+
+    # result = subprocess.run(string, shell=True, capture_output=True, text=True)
+    # print(result.stdout)
 
 
 if __name__ == "__main__":
@@ -234,9 +230,6 @@ if __name__ == "__main__":
     else:
         list_of_states = list_of_states_string.split(",")
 
-    print(PATH_DICT["GEOCODER_STATES"])
-    print(list_of_states)
-
     create_extension(db)
     create_folders()
 
@@ -252,9 +245,9 @@ if __name__ == "__main__":
     update_folder(db, PATH_DICT["GISDATA_FOLDER"])
 
     output = write_nation_script(db, profile_name)
-    # run_script(output)
+    run_script(output)
 
     output = write_state_script(db, profile_name, list_of_states)
-    # run_script(output)
+    run_script(output)
 
     create_index_and_clean_tiger_table(db)
