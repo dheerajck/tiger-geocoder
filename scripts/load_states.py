@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import time
 import zipfile
 from pathlib import Path
 
@@ -429,6 +430,10 @@ def load_states_data_caller():
             print(f"Loading state data for: {abbr} {fips}\n")
             load_state_data(abbr, fips)
             load_zip_tables_data(abbr, fips)
+
+        sleep_time = 2
+        print("Sleeping {sleep_time}")
+        time.sleep(sleep_time)
 
     print("-------------------------------------------------")
 

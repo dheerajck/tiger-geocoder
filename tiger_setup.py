@@ -116,7 +116,7 @@ def update_path(db, profile_name, path_dict):
         return None
 
 
-def write_nation_script(db, profile_name):
+def write_nation_script(db, profile_name, os_name=None):
     sql_command = "SELECT Loader_Generate_Nation_Script(%s)"
 
     try:
@@ -135,8 +135,16 @@ def write_nation_script(db, profile_name):
         return nation_script
 
 
-def write_state_script(db, profile_name, list_of_states):
+def write_state_script(db, profile_name, list_of_states, os_name=None):
     sql_command = f"SELECT Loader_Generate_Script(ARRAY{list_of_states}, %s)"
+
+    timer = 2
+    if os_name == "windows":
+        sleep_command_string = f"ping 127.0.0.1 -n {timer} > nul"
+        sleep_command_string = f"\n\n{sleep_command_string}\n\n"
+    else:
+        sleep_command_string = f"sleep {timer}"
+        sleep_command_string = f"\n\n{sleep_command_string}\n\n"
 
     try:
         cursor = db.connection.cursor()
@@ -151,7 +159,7 @@ def write_state_script(db, profile_name, list_of_states):
         for state_script in result:
             state_script_for_given_states.append(state_script[0])
 
-        state_script_for_given_states = "\n".join(state_script_for_given_states)
+        state_script_for_given_states = sleep_command_string.join(state_script_for_given_states)
         with open("load_states.sh", "w") as f:
             f.write(state_script_for_given_states)
 
@@ -246,10 +254,10 @@ if __name__ == "__main__":
     update_path(db, profile_name, PATH_DICT)
     update_folder(db, PATH_DICT["GISDATA_FOLDER"])
 
-    output = write_nation_script(db, profile_name)
+    output = write_nation_script(db, profile_name, os_name)
     run_script(output)
 
-    output = write_state_script(db, profile_name, list_of_states)
+    output = write_state_script(db, profile_name, list_of_states, os_name)
     run_script(output)
 
     create_index_and_clean_tiger_table(db)
