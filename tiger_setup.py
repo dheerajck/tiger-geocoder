@@ -144,7 +144,7 @@ def write_nation_script(db, profile_name):
     else:
         with open("load_nation.sh", "w") as f:
             f.write(result[0])
-            return result[0]
+        return result[0]
 
 
 def write_state_script(db, profile_name, list_of_states):
@@ -154,7 +154,7 @@ def write_state_script(db, profile_name, list_of_states):
 
     try:
         cursor.execute(sql_command, (profile_name,))
-        result = cursor.fetchone()
+        result = cursor.fetchall()
 
     except psycopg.Error as e:
         print(e)
@@ -163,8 +163,11 @@ def write_state_script(db, profile_name, list_of_states):
 
     else:
         with open("load_states.sh", "w") as f:
-            f.write(result[0])
-            return result[0]
+            for state_script in result:
+                f.write(state_script[0])
+        with open("load_states.sh", "r") as f:
+            result = f.read()
+        return result
 
 
 def run_script(string):
@@ -220,6 +223,17 @@ if __name__ == "__main__":
         print("Folder name for gisdata folder is required to start setting up database")
         exit()
 
+    # list_of_states = ['MA']
+    list_of_states_string = PATH_DICT["GEOCODER_STATES"]
+
+    if list_of_states_string == "*":
+        list_of_states = list(json.load(open('abbr - fips.json')).keys())
+    else:
+        list_of_states = list_of_states_string.split(",")
+
+    print(PATH_DICT["GEOCODER_STATES"])
+    print(list_of_states)
+
     create_extension(db)
     create_folders()
 
@@ -236,14 +250,8 @@ if __name__ == "__main__":
 
     output = write_nation_script(db, profile_name)
     run_script(output)
-    # list_of_states = ['MA']
-    list_of_states_string = PATH_DICT["GEOCODER_STATES"]
-    if list_of_states_string == "*":
-        with open("abbr - fips.json") as f:
-            list_of_states = list(json.load(f).keys())
-    else:
-        list_of_states = list_of_states_string.split(",")
 
     output = write_state_script(db, profile_name, list_of_states)
     run_script(output)
+
     create_index_and_clean_tiger_table(db)
