@@ -14,6 +14,7 @@ DB_USER = os.getenv("DB_USER")
 DB_NAME = os.getenv("DB_NAME")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_HOST = os.getenv("DB_HOST")
+PGPORT = os.getenv("DB_PORT")
 
 
 PSQL = os.getenv("PSQL")
@@ -34,12 +35,14 @@ def round_number_to_x(number, x):
 def run_shp2pgsql(command, os_name=None):
     if os_name == "windows":
         password = f"set PGPASSWORD={DB_PASSWORD}"
+        port = f"set PGPORT={PGPORT}"
     else:
         password = f"export PGPASSWORD={DB_PASSWORD}"
+        port = f"export PGPORT={PGPORT}"
 
     new_command = f"""
     {password}
-    {command} | {PSQL} -U {DB_USER} -d {DB_NAME} -h {DB_HOST}
+    {command} | {PSQL} -U {DB_USER} -d {DB_NAME} -h {DB_HOST} -p {PGPORT}
     """
 
     shp2pgsql_output = subprocess.run(new_command, shell=True, capture_output=True, text=True)
