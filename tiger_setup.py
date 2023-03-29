@@ -4,6 +4,7 @@ import platform
 import subprocess
 import sys
 from pathlib import Path
+import time
 
 import psycopg
 from dotenv import load_dotenv
@@ -11,6 +12,10 @@ from geocoder import Database
 
 
 load_dotenv(".env")
+
+SHELL_SCRIPT_FOLDER_DUMP = Path("tiger_setup_scripts_folder")
+SHELL_SCRIPT_FOLDER_DUMP.mkdir(parents=True, exist_ok=True)
+
 
 PATH_DICT = {
     "UNZIPTOOL": os.getenv("UNZIPTOOL"),
@@ -119,6 +124,13 @@ def update_path(db, profile_name, path_dict):
 def write_nation_script(db, profile_name, os_name=None):
     sql_command = "SELECT Loader_Generate_Nation_Script(%s)"
 
+    if os_name == "windows":
+        file_name = "load_nation.bat"
+    else:
+        file_name = "load_nation.sh"
+
+    file_name = SHELL_SCRIPT_FOLDER_DUMP / file_name
+
     try:
         cursor = db.connection.cursor()
         cursor.execute(sql_command, (profile_name,))
@@ -129,7 +141,7 @@ def write_nation_script(db, profile_name, os_name=None):
 
     else:
         nation_script = result[0]
-        with open("load_nation.sh", "w") as f:
+        with open(file_name, "w") as f:
             f.write(nation_script)
 
         return nation_script
@@ -138,29 +150,25 @@ def write_nation_script(db, profile_name, os_name=None):
 def write_state_script(db, profile_name, list_of_states, os_name=None):
     sql_command = f"SELECT Loader_Generate_Script(ARRAY{list_of_states}, %s)"
 
-    timer = 2
     if os_name == "windows":
-        sleep_command_string = f"ping 127.0.0.1 -n {timer} > nul"
-        sleep_command_string = f"\n\n{sleep_command_string}\n\n"
+        file_name = f"load_nation_{list_of_states[0]}.bat"
     else:
-        sleep_command_string = f"sleep {timer}"
-        sleep_command_string = f"\n\n{sleep_command_string}\n\n"
+        file_name = f"load_nation_{list_of_states[0]}.sh"
+
+    file_name = SHELL_SCRIPT_FOLDER_DUMP / file_name
 
     try:
         cursor = db.connection.cursor()
         cursor.execute(sql_command, (profile_name,))
-        result = cursor.fetchall()
+        result = cursor.fetchone()
 
     except psycopg.Error as e:
         raise Exception(f"write_state_script\n{e}")
 
     else:
-        state_script_for_given_states = []
-        for state_script in result:
-            state_script_for_given_states.append(state_script[0])
+        state_script_for_given_states = result[0]
 
-        state_script_for_given_states = sleep_command_string.join(state_script_for_given_states)
-        with open("load_states.sh", "w") as f:
+        with open(file_name, "w") as f:
             f.write(state_script_for_given_states)
 
         return state_script_for_given_states
@@ -257,7 +265,9 @@ if __name__ == "__main__":
     output = write_nation_script(db, profile_name, os_name)
     run_script(output)
 
-    output = write_state_script(db, profile_name, list_of_states, os_name)
-    run_script(output)
+    for state in list_of_states:
+        output = write_state_script(db, profile_name, [state], os_name)
+        run_script(output)
+        time.sleep(2)
 
     create_index_and_clean_tiger_table(db)
