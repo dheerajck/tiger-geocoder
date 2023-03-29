@@ -432,7 +432,7 @@ def load_states_data_caller():
             load_zip_tables_data(abbr, fips)
 
         sleep_time = 2
-        print("Sleeping {sleep_time}")
+        print(f"Sleeping {sleep_time}")
         time.sleep(sleep_time)
 
     print("-------------------------------------------------")

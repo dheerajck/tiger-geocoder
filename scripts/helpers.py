@@ -12,6 +12,10 @@ load_dotenv(".env")
 
 DB_USER = os.getenv("DB_USER")
 DB_NAME = os.getenv("DB_NAME")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_HOST = os.getenv("DB_HOST")
+
+
 PSQL = os.getenv("PSQL")
 YEAR = os.getenv("YEAR")
 
@@ -27,9 +31,22 @@ def round_number_to_x(number, x):
     return x * round(number / x)
 
 
-def run_shp2pgsql(command):
-    new_command = f"{command} | {PSQL} -U {DB_USER} -d {DB_NAME}"
+def run_shp2pgsql(command, os_name=None):
+    if os_name == "windows":
+        password = f"set PGPASSWORD={DB_PASSWORD}"
+    else:
+        password = f"export PGPASSWORD={DB_PASSWORD}"
+
+    new_command = f"""
+    {password}
+    {command} | {PSQL} -U {DB_USER} -d {DB_NAME} -h {DB_HOST}
+    """
+
     shp2pgsql_output = subprocess.run(new_command, shell=True, capture_output=True, text=True)
+    print(shp2pgsql_output.stdout)
+    print()
+    print()
+    print(shp2pgsql_output.stderr)
 
 
 def download(url):
