@@ -231,32 +231,27 @@ def run_script(string):
 
 
 if __name__ == "__main__":
-    db = Database()
     if PATH_DICT["GISDATA_FOLDER"] in [None, ""]:
         print("Folder name for gisdata folder is required to start setting up database")
         exit()
 
     available_states = set(json.load(open('abbr - fips.json')).keys())
-
     list_of_states_string = PATH_DICT["GEOCODER_STATES"]
 
     if list_of_states_string == "*":
         list_of_states = list(available_states)
     else:
         list_of_states = list_of_states_string.split(",")
+        list_of_states = [i.strip() for i in list_of_states]  # "MA, RI" wil not add RI as list_of_states = ["MA", " RI"] wouldnt load "RI"
 
-    list_of_states = [i.strip() for i in list_of_states]  # "MA, RI" wil not add RI as list_of_states = ["MA", " RI"] wouldnt load "RI"
+        invalid_state_abbreviations = set(list_of_states) - available_states
 
-    flag = False
-    for state in list_of_states:
-        if state not in available_states:
-            print(f"State {state} is not a recognized US state abbreviation\n")
-            flag = True
+        if len(invalid_state_abbreviations) != 0:
+            for state in invalid_state_abbreviations:
+                print(f"State {state} is not a recognized US state abbreviation\n")
+            exit()
 
-    if flag is True:
-        print("Add valid state US state abbreviation\n\n")
-        exit()
-
+    db = Database()
     create_extension(db)
     create_folders()
 
