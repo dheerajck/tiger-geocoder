@@ -16,8 +16,7 @@ load_dotenv(".env")
 SHELL_SCRIPT_FOLDER_DUMP = Path("tiger_setup_scripts_folder")
 SHELL_SCRIPT_FOLDER_DUMP.mkdir(parents=True, exist_ok=True)
 
-
-PATH_DICT = {
+ENV_DICT = {
     "UNZIPTOOL": os.getenv("UNZIPTOOL").strip(),
     "WGETTOOL": os.getenv("WGETTOOL").strip(),
     "PGPORT": os.getenv("DB_PORT").strip(),
@@ -67,7 +66,7 @@ def create_profile(db, profile_name, operating_system):
         return None
 
 
-def update_folder(db, folder_path):
+def update_tiger_data_download_folder_path(db, folder_path):
     folder_path = str(Path(folder_path).resolve())
     sql_command = "UPDATE tiger.loader_variables SET staging_fold=%s;"
 
@@ -80,7 +79,7 @@ def update_folder(db, folder_path):
         return None
 
 
-def update_path(db, profile_name, path_dict):
+def update_env_variables(db, profile_name, env_dict):
     select_sql_command = "SELECT declare_sect FROM tiger.loader_platform WHERE os=%s;"
 
     try:
@@ -94,9 +93,8 @@ def update_path(db, profile_name, path_dict):
     else:
         path_string = cursor.fetchone()[0]
         path_string_list = path_string.split("\n")
-        # print(path_string)
 
-        for name, value in path_dict.items():
+        for name, value in env_dict.items():
             if value not in [None, ""]:
                 for index, path_element in enumerate(list(path_string_list)):
                     if name in path_element:
@@ -175,18 +173,18 @@ def write_state_script(db, profile_name, list_of_states, os_name=None):
 
 
 def create_index_and_clean_tiger_table(db):
-    sql_command = """
+    create_index_sql_command = """
     SELECT install_missing_indexes();
     """
 
     try:
         cursor = db.connection.cursor()
-        cursor.execute(sql_command)
+        cursor.execute(create_index_sql_command)
 
     except psycopg.Error as e:
         print(e)
 
-    sql_command = """
+    clean_tiger_sql_command = """
     vacuum (analyze, verbose) tiger.addr;
     vacuum (analyze, verbose) tiger.edges;
     vacuum (analyze, verbose) tiger.faces;
@@ -199,16 +197,16 @@ def create_index_and_clean_tiger_table(db):
     vacuum (analyze, verbose) tiger.zip_state;
     vacuum (analyze, verbose) tiger.zip_state_loc;"""
 
-    for sql in sql_command.split(";"):
+    for individual_command in clean_tiger_sql_command.split(";"):
         try:
-            cursor.execute(sql)
+            cursor.execute(individual_command)
 
         except psycopg.Error as e:
             print(e)
 
 
 def create_folders():
-    folder_path = Path(PATH_DICT["GISDATA_FOLDER"])
+    folder_path = Path(ENV_DICT["GISDATA_FOLDER"])
     folder_path.mkdir(parents=True, exist_ok=True)
     temp_folder_path = folder_path / "temp"
     temp_folder_path.mkdir(parents=True, exist_ok=True)
@@ -231,12 +229,12 @@ def run_script(string):
 
 
 if __name__ == "__main__":
-    if PATH_DICT["GISDATA_FOLDER"] in [None, ""]:
+    if ENV_DICT["GISDATA_FOLDER"] in [None, ""]:
         print("Folder name for gisdata folder is required to start setting up database")
         exit()
 
     available_states = set(json.load(open('abbr - fips.json')).keys())
-    list_of_states_string = PATH_DICT["GEOCODER_STATES"]
+    list_of_states_string = ENV_DICT["GEOCODER_STATES"]
 
     if list_of_states_string == "*":
         list_of_states = list(available_states)
@@ -261,16 +259,16 @@ if __name__ == "__main__":
         os_name = "sh"
 
     profile_name = "new"
-
     create_profile(db, profile_name, os_name)
-    update_path(db, profile_name, PATH_DICT)
-    update_folder(db, PATH_DICT["GISDATA_FOLDER"])
 
-    output = write_nation_script(db, profile_name, os_name)
-    run_script(output)
+    update_env_variables(db, profile_name, ENV_DICT)
+    update_tiger_data_download_folder_path(db, ENV_DICT["GISDATA_FOLDER"])
+
+    nation_output = write_nation_script(db, profile_name, os_name)
+    run_script(nation_output)
 
     for state in list_of_states:
-        output = write_state_script(db, profile_name, [state], os_name)
-        run_script(output)
+        state_output = write_state_script(db, profile_name, [state], os_name)
+        run_script(state_output)
         create_index_and_clean_tiger_table(db)
         time.sleep(2)
