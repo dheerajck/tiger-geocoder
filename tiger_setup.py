@@ -185,7 +185,6 @@ def create_index_and_clean_tiger_table(db):
 
     except psycopg.Error as e:
         print(e)
-        return None
 
     sql_command = """
     vacuum (analyze, verbose) tiger.addr;
@@ -206,7 +205,6 @@ def create_index_and_clean_tiger_table(db):
 
         except psycopg.Error as e:
             print(e)
-            return None
 
 
 def create_folders():
@@ -268,6 +266,5 @@ if __name__ == "__main__":
     for state in list_of_states:
         output = write_state_script(db, profile_name, [state], os_name)
         run_script(output)
+        create_index_and_clean_tiger_table(db)
         time.sleep(2)
-
-    create_index_and_clean_tiger_table(db)
