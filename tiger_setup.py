@@ -18,16 +18,16 @@ SHELL_SCRIPT_FOLDER_DUMP.mkdir(parents=True, exist_ok=True)
 
 
 PATH_DICT = {
-    "UNZIPTOOL": os.getenv("UNZIPTOOL"),
-    "WGETTOOL": os.getenv("WGETTOOL"),
-    "PGPORT": os.getenv("DB_PORT"),
-    "PGHOST": os.getenv("DB_HOST"),
-    "PGUSER": os.getenv("DB_USER"),
+    "UNZIPTOOL": os.getenv("UNZIPTOOL").strip(),
+    "WGETTOOL": os.getenv("WGETTOOL").strip(),
+    "PGPORT": os.getenv("DB_PORT").strip(),
+    "PGHOST": os.getenv("DB_HOST").strip(),
+    "PGUSER": os.getenv("DB_USER").strip(),
     "PGPASSWORD": os.getenv("DB_PASSWORD"),
     "PGDATABASE": os.getenv("DB_NAME"),
-    "PSQL": os.getenv("PSQL"),
-    "GISDATA_FOLDER": os.getenv("GISDATA_FOLDER"),
-    "GEOCODER_STATES": os.getenv("GEOCODER_STATES"),
+    "PSQL": os.getenv("PSQL").strip(),
+    "GISDATA_FOLDER": os.getenv("GISDATA_FOLDER").strip(),
+    "GEOCODER_STATES": os.getenv("GEOCODER_STATES").strip(),
 }
 
 
@@ -236,15 +236,26 @@ if __name__ == "__main__":
         print("Folder name for gisdata folder is required to start setting up database")
         exit()
 
-    # list_of_states = ['MA']
+    available_states = set(json.load(open('abbr - fips.json')).keys())
+
     list_of_states_string = PATH_DICT["GEOCODER_STATES"]
 
     if list_of_states_string == "*":
-        list_of_states = list(json.load(open('abbr - fips.json')).keys())
+        list_of_states = list(available_states)
     else:
         list_of_states = list_of_states_string.split(",")
 
     list_of_states = [i.strip() for i in list_of_states]  # "MA, RI" wil not add RI as list_of_states = ["MA", " RI"] wouldnt load "RI"
+
+    flag = False
+    for state in list_of_states:
+        if state not in available_states:
+            print(f"State {state} is not a recognized US state abbreviation\n")
+            flag = True
+
+    if flag is True:
+        print("Add valid state US state abbreviation\n\n")
+        exit()
 
     create_extension(db)
     create_folders()
