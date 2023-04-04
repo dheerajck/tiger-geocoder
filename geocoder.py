@@ -52,7 +52,7 @@ class Database:
         with self.connection.cursor() as cursor:
             try:
                 cursor.execute(query, parameters)
-                # return cursor.fetchall()
+
             except psycopg.errors.UniqueViolation as e:
                 pass
             except psycopg.errors.DuplicateTable as e:
@@ -62,9 +62,8 @@ class Database:
             except psycopg.Error as e:
                 print(query)
                 raise e
-                # return None
 
-    def get_geocoded_data(self, address):
+    def get_geocoded_data(self, address, pagc_normalize_address=None):
         """
         Tries to geocode given address and returns a dictionary containing the geocoded information
         if geocoding was successful
@@ -76,17 +75,24 @@ class Database:
             'longitude': None,
             'confidence': GeocodingConfidence.NO_MATCH,
         }
-        cursor = self.connection.cursor()
+
+        if pagc_normalize_address:
+            sql_query = "SELECT pprint_addy(addy), ST_Y(geomout) As lat, ST_X(geomout) As lon, rating FROM geocode(pagc_normalize_address(%s))"
+
+        else:
+            sql_query = "SELECT pprint_addy(addy), ST_Y(geomout) As lat, ST_X(geomout) As lon, rating FROM geocode(%s)"
+
         try:
+            cursor = self.connection.cursor()
+
             cursor.execute(
-                "SELECT pprint_addy(addy), ST_Y(geomout) As lat, ST_X(geomout) As lon, rating FROM geocode(%s)",
+                sql_query,
                 [address],
             )
             result = cursor.fetchone()
 
         except psycopg.Error as e:
             raise e
-            # return None
 
         finally:
             cursor.close()
