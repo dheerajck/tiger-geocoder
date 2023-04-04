@@ -69,6 +69,7 @@ class Database:
         if geocoding was successful
         """
 
+        result = None
         geocoded_data = {
             'address': None,
             'latitude': None,
@@ -117,3 +118,41 @@ class Database:
             geocoded_data["confidence"] = confidence
 
         return geocoded_data
+
+    def reverse_geocode(self, latutude, longitude):
+        """
+        Tries to reverse geocode given coordinates and returns a dictionary containing matched streets
+        if reverse geocoding was successful
+        """
+
+        result = None
+        street_data = {
+            'street_1': None,
+            'street_2': None,
+            'street_3': None,
+        }
+
+        # dont use this query in production, use parametrized version as this query is vulnerable to sql injection
+        sql_query = f"""
+            SELECT pprint_addy(r.addy[1]) As st1, pprint_addy(r.addy[2]) As st2, pprint_addy(r.addy[3])
+            FROM reverse_geocode(ST_GeomFromText('POINT({longitude} {latutude})')) AS r"""
+        try:
+            cursor = self.connection.cursor()
+
+            cursor.execute(
+                sql_query,
+            )
+            result = cursor.fetchone()
+
+        except psycopg.Error as e:
+            raise e
+
+        finally:
+            cursor.close()
+
+        if result:
+            street_data['street_1'] = result[0]
+            street_data['street_2'] = result[1]
+            street_data['street_3'] = result[2]
+
+        return street_data
