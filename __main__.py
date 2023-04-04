@@ -9,13 +9,17 @@ if __name__ == "__main__":
     address_list += ["115 Cass Avenue, RI 02895", "1279 Wampanoag Trl, Riverside, RI 02915"]
 
     for address in address_list:
+        print(address)
         print(db.get_geocoded_data(address))
+        print()
 
     print()
     print()
 
     for address in address_list:
+        print(address)
         print(db.get_geocoded_data(address, pagc_normalize_address=True))
+        print()
 
     print()
     print()
