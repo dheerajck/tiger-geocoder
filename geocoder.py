@@ -49,19 +49,19 @@ class Database:
         self.connection = psycopg.connect(**db_parameters)
 
     def execute(self, query, parameters=None):
-        with self.connection.cursor() as cursor:
-            try:
+        try:
+            with self.connection.cursor() as cursor:
                 cursor.execute(query, parameters)
 
-            except psycopg.errors.UniqueViolation as e:
-                pass
-            except psycopg.errors.DuplicateTable as e:
-                pass
-            except psycopg.errors.DuplicateObject as e:
-                pass
-            except psycopg.Error as e:
-                print(query)
-                raise e
+        except psycopg.errors.UniqueViolation as e:
+            pass
+        except psycopg.errors.DuplicateTable as e:
+            pass
+        except psycopg.errors.DuplicateObject as e:
+            pass
+        except psycopg.Error as e:
+            print(query)
+            raise e
 
     def get_geocoded_data(self, address, pagc_normalize_address=None):
         """
@@ -84,19 +84,15 @@ class Database:
             sql_query = "SELECT pprint_addy(addy), ST_Y(geomout) As lat, ST_X(geomout) As lon, rating FROM geocode(%s)"
 
         try:
-            cursor = self.connection.cursor()
-
-            cursor.execute(
-                sql_query,
-                [address],
-            )
-            result = cursor.fetchone()
+            with self.connection.cursor() as cursor:
+                cursor.execute(
+                    sql_query,
+                    [address],
+                )
+                result = cursor.fetchone()
 
         except psycopg.Error as e:
             raise e
-
-        finally:
-            cursor.close()
 
         if result:
             address = result[0]
@@ -137,18 +133,14 @@ class Database:
             SELECT pprint_addy(r.addy[1]) As st1, pprint_addy(r.addy[2]) As st2, pprint_addy(r.addy[3])
             FROM reverse_geocode(ST_GeomFromText('POINT({longitude} {latutude})')) AS r"""
         try:
-            cursor = self.connection.cursor()
-
-            cursor.execute(
-                sql_query,
-            )
-            result = cursor.fetchone()
+            with self.connection.cursor() as cursor:
+                cursor.execute(
+                    sql_query,
+                )
+                result = cursor.fetchone()
 
         except psycopg.Error as e:
             raise e
-
-        finally:
-            cursor.close()
 
         if result:
             street_data['street_1'] = result[0]
