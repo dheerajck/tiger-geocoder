@@ -3,17 +3,23 @@ from geocoder import Database
 if __name__ == "__main__":
     db = Database()
 
-    # geocoding
-    address_list = ["115 Cass Avenue in Woonsocket, RI", "60 TEMPLE PL, BOSTON, MA"]
-
-    address_list += ["115 Cass Avenue, RI 02895", "1279 Wampanoag Trl, Riverside, RI 02915"]
+    # Geocoding address
+    address_list = [
+        "115 Cass Avenue in Woonsocket, RI",
+        "60 TEMPLE PL, BOSTON, MA",
+        "115 Cass Avenue, RI 02895",
+        "1279 Wampanoag Trl, Riverside, RI 02915",
+        "1428 West AVE APT 405 Miami FL 33139",
+        "1428 West AVE Miami FL 33139",
+        # Address from AAA Test SOV-PINGv2-DEV (5).xlsm shared via slack pm
+        "643 Summer St, Boston, Suffolk, MA, 02210",
+    ]
 
     for address in address_list:
         print(address)
         print(db.get_geocoded_data(address))
         print()
 
-    print()
     print()
 
     for address in address_list:
@@ -22,9 +28,9 @@ if __name__ == "__main__":
         print()
 
     print()
-    print()
 
-    # reverse geocoding
+    # Reverse geocoding address
+    # 115 Cass Avenue in Woonsocket, RI
     latitude = 42.00520268824846
     longitude = -71.49633130645371
     print(db.reverse_geocode(latitude, longitude))
