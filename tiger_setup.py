@@ -27,6 +27,7 @@ ENV_DICT = {
     "PSQL": os.getenv("PSQL").strip(),
     "GISDATA_FOLDER": os.getenv("GISDATA_FOLDER").strip(),
     "GEOCODER_STATES": os.getenv("GEOCODER_STATES").strip(),
+    "YEAR": os.getenv("YEAR").strip(),
 }
 
 
@@ -66,13 +67,13 @@ def create_profile(db, profile_name, operating_system):
         return None
 
 
-def update_tiger_data_download_folder_path(db, folder_path):
+def update_tiger_data_download_folder_path(db, folder_path, year):
     folder_path = str(Path(folder_path).resolve())
-    sql_command = "UPDATE tiger.loader_variables SET staging_fold=%s;"
+    sql_command = "UPDATE tiger.loader_variables SET staging_fold=%s, tiger_year=%s;"
 
     try:
         cursor = db.connection.cursor()
-        cursor.execute(sql_command, (folder_path,))
+        cursor.execute(sql_command, (folder_path, year))
 
     except psycopg.Error as e:
         print(e)
@@ -262,7 +263,7 @@ if __name__ == "__main__":
     create_profile(db, profile_name, os_name)
 
     update_env_variables(db, profile_name, ENV_DICT)
-    update_tiger_data_download_folder_path(db, ENV_DICT["GISDATA_FOLDER"])
+    update_tiger_data_download_folder_path(db, ENV_DICT["GISDATA_FOLDER"], ENV_DICT["YEAR"])
 
     nation_output = write_nation_script(db, profile_name, os_name)
     run_script(nation_output)
