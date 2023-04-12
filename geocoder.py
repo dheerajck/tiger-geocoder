@@ -20,15 +20,14 @@ db_parameters = {
 def drop_and_create_new_database():
     db_name = db_parameters["dbname"]
     temp = db_parameters.copy()
-    temp.pop("dbname")
-    print(db_parameters)
-    print(temp)
-
+    temp["dbname"] = "postgres"
     connection = psycopg.connect(**temp)
 
     with connection.cursor() as cursor:
-        cursor.execute(f"DROP DATABASE {db_name}")
-
+        try:
+            cursor.execute(f"DROP DATABASE {db_name}")
+        except psycopg.errors.InvalidCatalogName:
+            pass
     with connection.cursor() as cursor:
         cursor.execute(f"CREATE DATABASE {db_name}")
 
