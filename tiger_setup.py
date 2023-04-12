@@ -69,11 +69,13 @@ def create_profile(db, profile_name, operating_system):
 
 def update_tiger_data_download_folder_path(db, folder_path, year):
     folder_path = str(Path(folder_path).resolve())
-    sql_command = "UPDATE tiger.loader_variables SET staging_fold=%s, tiger_year=%s;"
+    website_root = f"https://www2.census.gov/geo/tiger/TIGER{year}"
+
+    sql_command = "UPDATE tiger.loader_variables SET staging_fold=%s, tiger_year=%s, website_root=%s;"
 
     try:
         cursor = db.connection.cursor()
-        cursor.execute(sql_command, (folder_path, year))
+        cursor.execute(sql_command, (folder_path, year, website_root))
 
     except psycopg.Error as e:
         print(e)
