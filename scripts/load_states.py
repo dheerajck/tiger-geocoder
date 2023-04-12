@@ -293,22 +293,22 @@ def load_state_data(abbr, fips):
 
     print(f"{start_message} - Done\n")
 
-    #############
-    # Block Group
-    #############
+    # #############
+    # # Block Group
+    # #############
 
-    section = "bg"
-    primary_key = "bg_id"
+    # section = "bg"
+    # primary_key = "bg_id"
 
-    start_message = f"Started to setup {section}"
-    print(start_message)
+    # start_message = f"Started to setup {section}"
+    # print(start_message)
 
-    download_extract(section, fips)
-    create_state_section_table_and_add_data(section, abbr, fips, primary_key, YEAR)
+    # download_extract(section, fips)
+    # create_state_section_table_and_add_data(section, abbr, fips, primary_key, YEAR)
 
-    db.execute(f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_bg_the_geom_gist ON tiger_data.{abbr}_bg USING gist(the_geom)")
+    # db.execute(f"CREATE INDEX IF NOT EXISTS tiger_data_{abbr}_bg_the_geom_gist ON tiger_data.{abbr}_bg USING gist(the_geom)")
 
-    print(f"{start_message} - Done\n")
+    # print(f"{start_message} - Done\n")
 
 
 def load_zip_tables_data(abbr, fips):

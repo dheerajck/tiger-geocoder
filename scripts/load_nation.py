@@ -86,12 +86,6 @@ def load_national_data():
         """
     )
 
-    # Load data from shapefile into tiger_staging.county
-    # cmd = f"{SHP2PGSQL} -D -c -s 4269 -g the_geom -W 'latin1' tl_{YEAR}_us_county.dbf tiger_staging.county"
-    # with os.popen(cmd) as pipe:
-    #     with connection.cursor() as cur:
-    #         cur.copy_from(pipe, "tiger_staging.county")
-
     command = f"{SHP2PGSQL} -D -c -s 4269 -g the_geom -W 'latin1' tl_{YEAR}_us_county.dbf tiger_staging.county"
     run_shp2pgsql(command)
 

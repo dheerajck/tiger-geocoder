@@ -63,3 +63,4 @@ def create_state_section_table_and_add_data(section, abbr, fips, primary_key, YE
         )
 
     db.execute(f"VACUUM ANALYZE tiger_data.{abbr}_{section}")
+    db.connection.commit()

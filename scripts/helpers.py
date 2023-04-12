@@ -35,10 +35,8 @@ def round_number_to_x(number, x):
 def run_shp2pgsql(command, os_name=None):
     if os_name == "windows":
         password = f"set PGPASSWORD={DB_PASSWORD}"
-        port = f"set PGPORT={PGPORT}"
     else:
         password = f"export PGPASSWORD={DB_PASSWORD}"
-        port = f"export PGPORT={PGPORT}"
 
     new_command = f"""
     {password}
@@ -46,9 +44,11 @@ def run_shp2pgsql(command, os_name=None):
     """
 
     shp2pgsql_output = subprocess.run(new_command, shell=True, capture_output=True, text=True)
+    print("shp2pgsql output")
     print(shp2pgsql_output.stdout)
     print()
     print()
+    print("shp2pgsql error")
     print(shp2pgsql_output.stderr)
 
 
@@ -125,7 +125,6 @@ def clear_temp(temp_dir):
 
 
 def download_extract(section, country_code_or_fips_number):
-    # country code will always be us as tiger is just for us
     current_url = f"{BASE_URL}/{section.upper()}/tl_{YEAR}_{country_code_or_fips_number}_{section}.zip"
     clear_temp(TEMP_DIR)
     downloaded_file_full_path = download(current_url)
