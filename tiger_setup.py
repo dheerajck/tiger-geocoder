@@ -62,6 +62,8 @@ def create_profile(db, profile_name, operating_system):
         cursor = db.connection.cursor()
         cursor.execute(sql_command, (profile_name, operating_system))
 
+    except psycopg.errors.UniqueViolation:
+        pass
     except psycopg.Error as e:
         print(e)
         return None
@@ -108,7 +110,7 @@ def update_env_variables(db, profile_name, env_dict):
         path_string = "\n".join(path_string_list)
         # print(path_string)
 
-    update_sql_command = "UPDATE tiger.loader_platform SET declare_sect=%s WHERE os=%s"
+    update_sql_command = "UPDATE tiger.loader_platform SET declare_sect=%s WHERE os=%s;"
 
     try:
         cursor = db.connection.cursor()
@@ -123,7 +125,7 @@ def update_env_variables(db, profile_name, env_dict):
 
 
 def write_nation_script(db, profile_name, os_name=None):
-    sql_command = "SELECT Loader_Generate_Nation_Script(%s)"
+    sql_command = "SELECT Loader_Generate_Nation_Script(%s);"
 
     if os_name == "windows":
         file_name = "load_nation.bat"
@@ -149,7 +151,7 @@ def write_nation_script(db, profile_name, os_name=None):
 
 
 def write_state_script(db, profile_name, list_of_states, os_name=None):
-    sql_command = f"SELECT Loader_Generate_Script(ARRAY{list_of_states}, %s)"
+    sql_command = f"SELECT Loader_Generate_Script(ARRAY{list_of_states}, %s);"
 
     if os_name == "windows":
         file_name = f"load_nation_{list_of_states[0]}.bat"
@@ -176,9 +178,7 @@ def write_state_script(db, profile_name, list_of_states, os_name=None):
 
 
 def create_index_and_clean_tiger_table(db):
-    create_index_sql_command = """
-    SELECT install_missing_indexes();
-    """
+    create_index_sql_command = "SELECT install_missing_indexes();"
 
     try:
         cursor = db.connection.cursor()
@@ -236,16 +236,16 @@ if __name__ == "__main__":
         print("Folder name for gisdata folder is required to start setting up database")
         exit()
 
-    available_states = set(json.load(open('abbr - fips.json')).keys())
+    available_states = list(json.load(open('abbr - fips.json')).keys())
     list_of_states_string = ENV_DICT["GEOCODER_STATES"]
 
     if list_of_states_string == "*":
-        list_of_states = list(available_states)
+        list_of_states = available_states
     else:
         list_of_states = list_of_states_string.split(",")
         list_of_states = [i.strip() for i in list_of_states]  # "MA, RI" wil not add RI as list_of_states = ["MA", " RI"] wouldnt load "RI"
 
-        invalid_state_abbreviations = set(list_of_states) - available_states
+        invalid_state_abbreviations = set(list_of_states) - set(available_states)
 
         if len(invalid_state_abbreviations) != 0:
             for state in invalid_state_abbreviations:
