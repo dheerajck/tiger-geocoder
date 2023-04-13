@@ -246,6 +246,11 @@ if __name__ == "__main__":
 
     if list_of_states_string == "*":
         list_of_states = available_states
+        added_states = ['RI', 'MA', ' DE', ' CT', ' NJ', ' NH', ' VT', ' HI', ' MD', ' AS', ' WV', ' MS', 'NY']
+        added_states += ['AS', 'FM', 'GU', 'MH', 'MP', 'PR', 'PW', 'UM', 'VI']
+        added_states = [i.strip() for i in added_states]
+        list_of_states = list(set(list_of_states) - set(added_states))
+
     else:
         list_of_states = list_of_states_string.split(",")
         list_of_states = [i.strip() for i in list_of_states]  # "MA, RI" wil not add RI as list_of_states = ["MA", " RI"] wouldnt load "RI"
