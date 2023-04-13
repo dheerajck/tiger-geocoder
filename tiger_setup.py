@@ -170,6 +170,10 @@ def write_state_script(db, profile_name, list_of_states, os_name=None):
         raise Exception(f"write_state_script\n{e}")
 
     else:
+        if result is None:
+            print(list_of_states[0])
+            return ""
+
         state_script_for_given_states = result[0]
 
         with open(file_name, "w") as f:
@@ -273,6 +277,7 @@ if __name__ == "__main__":
 
     for state in list_of_states:
         state_output = write_state_script(db, profile_name, [state], os_name)
-        run_script(state_output)
-        create_index_and_clean_tiger_table(db)
-        time.sleep(2)
+        if state_output:
+            run_script(state_output)
+            create_index_and_clean_tiger_table(db)
+            time.sleep(2)
