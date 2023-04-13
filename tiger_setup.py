@@ -25,7 +25,6 @@ ENV_DICT = {
     "PGPASSWORD": os.getenv("DB_PASSWORD"),
     "PGDATABASE": os.getenv("DB_NAME"),
     "PSQL": os.getenv("PSQL").strip(),
-    "PGBIN": os.getenv("PGBIN").strip(),
     "GISDATA_FOLDER": os.getenv("GISDATA_FOLDER").strip(),
     "GEOCODER_STATES": os.getenv("GEOCODER_STATES").strip(),
     "YEAR": os.getenv("YEAR").strip(),
