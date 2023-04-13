@@ -47,6 +47,16 @@ class Database:
         # print(db_parameters)
         self.connection = psycopg.connect(**db_parameters)
 
+        version = -1
+        with self.connection.cursor() as cursor:
+            data = cursor.execute("SELECT current_setting('server_version');").fetchone()
+            version = float(data[0])
+
+        if version < 15:
+            print(version)
+            raise Exception("Use postgresql 15 or new")
+            exit()
+
     def execute(self, query, parameters=None):
         try:
             with self.connection.cursor() as cursor:
