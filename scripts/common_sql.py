@@ -46,7 +46,10 @@ def create_state_section_table_and_add_data(section, abbr, fips, primary_key, YE
     for file in dbf_files:
         # this function is called from load_states.py so current working directory is TEMP_DIR
         # so tl_{YEAR}_us_state.dbf is in TEMP_DIR
-        run_shp2pgsql(f"{SHP2PGSQL} -D -c -s 4269 -g the_geom -W 'latin1' {file} tiger_staging.{abbr}_{section}")
+        if section in {"place", "cousub", "tract", "tabblock20"}:
+            run_shp2pgsql(f"{SHP2PGSQL} -D -c -s 4269 -g the_geom -W 'latin1' {file} tiger_staging.{abbr}_{section}")
+        else:
+            run_shp2pgsql(f"{SHP2PGSQL} -D -s 4269 -g the_geom -W 'latin1' {file} tiger_staging.{abbr}_{section}")
 
         if section in {"place", "cousub", "tract", "bg"}:
             db.execute(f"ALTER TABLE tiger_staging.{abbr}_{section} RENAME geoid TO {primary_key}")
