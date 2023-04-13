@@ -33,20 +33,21 @@ ENV_DICT = {
 
 def create_extension(db):
     sql_command = """
-    CREATE EXTENSION IF NOT EXISTS postgis;
-    CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
-    CREATE EXTENSION IF NOT EXISTS postgis_tiger_geocoder;
-    CREATE EXTENSION IF NOT EXISTS address_standardizer;
-    CREATE EXTENSION IF NOT EXISTS address_standardizer_data_us;
+    CREATE EXTENSION postgis;
+    CREATE EXTENSION fuzzystrmatch;
+    CREATE EXTENSION postgis_tiger_geocoder;
+    CREATE EXTENSION address_standardizer;
+    CREATE EXTENSION address_standardizer_data_us;
     """
 
-    try:
-        cursor = db.connection.cursor()
-        cursor.execute(sql_command)
+    for i in sql_command.split(";"):
+        try:
+            cursor = db.connection.cursor()
+            cursor.execute(i)
 
-    except psycopg.Error as e:
-        print(e)
-        return None
+        except psycopg.Error as e:
+            print(e)
+            pass
 
 
 def create_profile(db, profile_name, operating_system):
