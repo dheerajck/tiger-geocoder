@@ -27,7 +27,7 @@ ENV_DICT = {
     "PSQL": os.getenv("PSQL").strip(),
     "GISDATA_FOLDER": os.getenv("GISDATA_FOLDER").strip(),
     "GEOCODER_STATES": os.getenv("GEOCODER_STATES").strip(),
-    "YEAR": os.getenv("YEAR").strip(),
+    "YEAR": 2022,
 }
 
 

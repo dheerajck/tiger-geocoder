@@ -17,7 +17,7 @@ load_dotenv(".env")
 
 GISDATA_FOLDER = os.getenv("GISDATA_FOLDER")
 GEOCODER_STATES = os.getenv("GEOCODER_STATES")
-YEAR = os.getenv("YEAR")
+YEAR = 2022
 SHP2PGSQL = os.getenv("SHP2PGSQL")
 
 

@@ -11,7 +11,7 @@ from .helpers import download_extract, run_shp2pgsql
 load_dotenv(".env")
 
 GISDATA_FOLDER = os.getenv("GISDATA_FOLDER")
-YEAR = os.getenv("YEAR")
+YEAR = 2022
 SHP2PGSQL = os.getenv("SHP2PGSQL")
 
 # Define paths
