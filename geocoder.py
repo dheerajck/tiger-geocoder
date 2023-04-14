@@ -83,6 +83,7 @@ class Database:
             'address': None,
             'latitude': None,
             'longitude': None,
+            'rating': None,
             'confidence': GeocodingConfidence.NO_MATCH,
         }
 
@@ -120,6 +121,7 @@ class Database:
             geocoded_data["address"] = address
             geocoded_data["latitude"] = latitude
             geocoded_data["longitude"] = longitude
+            geocoded_data["rating"] = rating
             geocoded_data["confidence"] = confidence
 
         return geocoded_data
